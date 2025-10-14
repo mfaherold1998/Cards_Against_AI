@@ -1,0 +1,7 @@
+{
+    "dataset": "test",
+    "rounds": 2,
+    "models": ["gemma3:4b"],
+    "temperatures": [0.5, 0.8],
+    "PICK_more_than_2": false
+}
