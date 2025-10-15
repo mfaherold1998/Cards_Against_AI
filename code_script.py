@@ -117,7 +117,7 @@ for game, model, temperature in product(games, models, temperatures):
     
     for play in game.values: 
 
-        if config_params.get('PICK_more_than_2') == False:
+        if config_params.get('pick_more_than_2') == False:
             if play[1] in ["B005","B091"]: # Cards with 3 options to pick
                 continue
         
@@ -451,3 +451,4 @@ for L in df_results_toxicity_scores['language'].dropna().unique():
 
 
 print("Finish")
+
