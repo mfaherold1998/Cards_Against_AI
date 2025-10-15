@@ -1,5 +1,9 @@
 # Cards Against AI—Evaluating Toxicity and Bias in Language Models
 
+```
+python version = 3.12.0
+```
+
 This repository contains the code developed for a thesis exploring biases and toxicity in large language models (LLMs) by simulating automated rounds of *Cards Against Humanity*. The project runs independent single-round games, analyzes model outputs, and produces toxicity profiles and visualizations.
 
 ---
