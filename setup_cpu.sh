@@ -11,10 +11,10 @@ source "$VENV_NAME"/Scripts/activate
 echo "--- 3. Installing dependencies (requirements.txt) ---"
 pip install -r requirements.txt
 
-echo "--- 4. Installing PyTorch with CUDA (GPU) ---"
+echo "--- 4. Installing PyTorch ---"
 pip install torch torchvision
 
-echo "--- 5. Verifying PyTorch and CUDA ---"
-python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
+echo "--- 5. Verifying PyTorch ---"
+python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
 
 echo "--- Installation complete. ---"
