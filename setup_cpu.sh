@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VENV_NAME="venv_gpu"
+VENV_NAME="venv_cpu"
 
 echo "--- 1. Creating virtual enviroment ($VENV_NAME) ---"
 python -m venv "$VENV_NAME"
