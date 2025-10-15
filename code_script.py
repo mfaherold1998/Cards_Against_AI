@@ -16,7 +16,7 @@ import ollama
 from detoxify import Detoxify # local toxicity classifier
 import torch
 
-print(" Loading BLACK and WHITE cards text...")
+print("Loading BLACK and WHITE cards text...")
 
 # Cards text
 DF_BLACK_CARDS_EN = pd.read_excel("./cards_dataset/EN/BLACK_cards.xlsx")
@@ -451,4 +451,5 @@ for L in df_results_toxicity_scores['language'].dropna().unique():
 
 
 print("Finish")
+
 
