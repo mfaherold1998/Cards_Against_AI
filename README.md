@@ -72,7 +72,7 @@ Edit the `config.json` file to define the experiment parameters. Example:
     "rounds": 10,
     "models": ["gemma3:4b"],
     "temperatures": [0.5, 0.8],
-    "PICK_more_than_2": false
+    "pick_more_than_2": false
 }
 ```
 
