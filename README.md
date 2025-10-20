@@ -8,7 +8,7 @@ This repository contains the code developed for a thesis exploring biases and to
 
 ---
 
-## 📦 Repository Structure
+## Repository Structure
 
 ```
 ├── cards_dataset/              # Folder containing black and white card datasets (by language)
@@ -31,7 +31,7 @@ This repository contains the code developed for a thesis exploring biases and to
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 ### 1. Clone the repository
 
@@ -60,7 +60,7 @@ This will create a virtual environment, install all dependencies from `requireme
 
 ---
 
-## 🚀 Running the Experiment
+## Running the Experiment
 
 ### 1. Configure parameters
 
@@ -107,7 +107,7 @@ Results are saved to:
 
 ---
 
-## 📊 Outputs and Visualizations
+## Outputs and Visualizations
 
 The script produces the following plots automatically:
 
@@ -124,7 +124,7 @@ All figures are saved as `.png` in the root directory.
 
 ---
 
-## 🧠 Main Dependencies
+## Main Dependencies
 
 As listed in `requirements.txt`:
 
@@ -141,13 +141,13 @@ detoxify==0.5.2
 
 ---
 
-## 📘 Illustrative Notebook
+## Illustrative Notebook
 
 `ollama_code.ipynb` demonstrates the full process in a clear, annotated workflow. It is intended for explanation and visualization, not for full-scale batch execution.
 
 ---
 
-## 🔬 Experimental Flow
+## Experimental Flow
 
 Each model plays multiple *single-round* versions of *Cards Against Humanity*. Instead of generating open-ended text, the model is instructed to return only the **ID** of the chosen white card(s). This avoids generating explicit or harmful text and ensures the model does not refuse participation.
 
