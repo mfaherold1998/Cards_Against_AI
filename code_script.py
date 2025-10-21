@@ -1,21 +1,21 @@
+print("Importing Libraries")
 from pathlib import Path
 from datetime import datetime
 import json
-import pandas as pd
 
 from src.data_loader import load_cards, config_games
 from src.model_runner import run_models
 from src.args_parser import get_args
 from src.response_processing import get_winners_id, build_sentence
 from src.toxicity_detox import add_detoxify_scores
-from src.plotting import plot_all
+from src.plotting import plot_all, plot_all_configs
 
 
 print("Parsing config.json file to get parameters...")
 
 config_params = get_args()
 
-date_tag = datetime.now().strftime("%d_%m_%Y_%H:%M:%S")
+date_tag = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
 RUN_DIR = Path(config_params.get("save_dir", "./results")) / f"run_{date_tag}"
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -50,7 +50,10 @@ print("Starting MODEL RESPONSES PROCESSING ...")
 
 # df with rows where the answer does not contains a white card ID
 no_id_detected = get_winners_id(df_results)  
-df_results['sentence'] = df_results.apply(build_sentence, axis=1)
+df_results['sentence'] = df_results.apply(build_sentence, axis=1, args=(DIC_ALL_CARDS,))
+
+# How many times the model choose less or more cards than blank spaces 
+df_inconsistencies = df_results["sentence"].str.contains(r"\[WARN").copy()
 
 print("Saving results...")
 
@@ -77,6 +80,8 @@ df_results_detoxify_scores = df_results_detoxify_scores.dropna(axis=1, how='all'
 print("Creating Graphics (saving .png pictures)...")
 
 plot_paths = plot_all(df_results_detoxify_scores, outdir=RUN_DIR)
+plot_all_configs(df_results_detoxify_scores, outdir=RUN_DIR)
+
 with open(RUN_DIR / "generated_plots.txt", "w", encoding="utf-8") as f:
     for p in plot_paths:
         f.write(str(p) + "\n")

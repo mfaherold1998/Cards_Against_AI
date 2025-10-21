@@ -73,7 +73,7 @@ def plot_temperature_curve_per_model(df: pd.DataFrame, outdir: Path | str) -> Li
         plt.plot(sub["temperature"], sub["mean"], marker="o")
         plt.fill_between(sub["temperature"], sub["mean"]-1.96*sub["sem"], sub["mean"]+1.96*sub["sem"], alpha=0.2)
         plt.title(f"{m}: Toxicity vs Temperature"); plt.xlabel("Temperature"); plt.ylabel("Mean")
-        path = outdir / f"temperature_curve_{m}.png"
+        path = outdir / f"temperature_curve.png"
         plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
         paths.append(path)
     return paths
@@ -256,17 +256,87 @@ def plot_language_risk(df: pd.DataFrame, outdir: Path | str) -> List[Path]:
         paths.append(path)
     return paths
 
+def plot_config_heatmap(df: pd.DataFrame, outdir: Path | str, min_n: int = 1) -> Optional[Path]:
+    cols = ["config_name", "model", "detox_toxicity"]
+    if not _has_cols(df, cols):
+        return None
+    outdir = _ensure_outdir(outdir)
+
+    stats = (df.groupby(["config_name", "model"])["detox_toxicity"]
+               .agg(["mean","count"])
+               .reset_index())
+    stats = stats[stats["count"] >= min_n]
+    if stats.empty:
+        return None
+
+    mat = stats.pivot(index="config_name", columns="model", values="mean")
+    if mat.empty:
+        return None
+
+    plt.figure(figsize=(10, max(6, 0.5*len(mat.index))))
+    plt.imshow(mat.values, aspect="auto")
+    plt.colorbar(label="Mean toxicity", shrink=0.7)
+    plt.yticks(range(len(mat.index)), mat.index)
+    plt.xticks(range(len(mat.columns)), mat.columns, rotation=30)
+    plt.title("Mean toxicity by configuration × model")
+    path = Path(outdir) / "config_heatmap_mean_toxicity.png"
+    plt.tight_layout(); plt.savefig(path, dpi=300, bbox_inches="tight"); plt.close()
+    return path
+
+def plot_config_distribution(df: pd.DataFrame, outdir: Path | str, by_model: bool = False) -> Optional[Path]:
+    cols = ["config_name", "detox_toxicity"] + (["model"] if by_model else [])
+    if not _has_cols(df, cols):
+        return None
+    outdir = _ensure_outdir(outdir)
+
+    plt.figure(figsize=(12, max(6, 0.5 * df["config_name"].nunique())))
+    if by_model:
+        # violin layered por modelo (puede ser denso si hay muchos modelos)
+        sns.violinplot(data=df, x="detox_toxicity", y="config_name", hue="model", cut=0, inner="quartile", density_norm="width")
+        plt.legend(title="Model", bbox_to_anchor=(1.04, 1), loc="upper left")
+        title = "Toxicity distribution by configuration (split by model)"
+        fname = "config_distribution_by_model.png"
+    else:
+        sns.violinplot(data=df, x="detox_toxicity", y="config_name", cut=0, inner="quartile", density_norm="width")
+        title = "Toxicity distribution by configuration (all models)"
+        fname = "config_distribution.png"
+
+    plt.title(title); plt.xlabel("detox_toxicity"); plt.ylabel("configuration")
+    path = Path(outdir) / fname
+    plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
+    return path
+
+def plot_config_tail_rate(df: pd.DataFrame, outdir: Path | str, thr: float = 0.8) -> Optional[Path]:
+    cols = ["config_name", "detox_toxicity", "model"]
+    if not _has_cols(df, cols):
+        return None
+    outdir = _ensure_outdir(outdir)
+
+    tmp = df.copy()
+    tmp["tail"] = (tmp["detox_toxicity"] >= thr).astype(int)
+
+    rate = (tmp.groupby(["config_name", "model"])["tail"]
+              .mean().mul(100).reset_index())
+
+    if rate.empty:
+        return None
+
+    plt.figure(figsize=(12, max(6, 0.5*rate["config_name"].nunique())))
+    # barras agrupadas por modelo
+    sns.barplot(data=rate, x="config_name", y="tail", hue="model")
+    plt.ylabel(f"% ≥ {thr}"); plt.xlabel("configuration"); plt.title("High-toxicity rate by configuration")
+    plt.xticks(rotation=30, ha="right")
+    path = Path(outdir) / "config_tail_rate.png"
+    plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
+    return path
+
 def plot_all(df: pd.DataFrame, outdir: Path | str = "./plots") -> List[Path]:
     """
     Generates all possible charts with the available data.
     Returns a list of paths to created files.
     """
 
-    timestamp = datetime.now().strftime("%d_%m_%Y_%H:%M:%S") 
-    outdir = Path(outdir)
-    outdir = outdir.parent / f"{outdir.name}_{timestamp}"
-    outdir.mkdir(parents=True, exist_ok=True)
-
+    outdir = _ensure_outdir(outdir)
     paths: List[Path] = []
 
     maybe = [
@@ -279,6 +349,19 @@ def plot_all(df: pd.DataFrame, outdir: Path | str = "./plots") -> List[Path]:
         *plot_instability(df, outdir),
         plot_category_comparison(df, outdir),
         *plot_language_risk(df, outdir),
+    ]
+    paths.extend([p for p in maybe if p is not None])
+    return paths
+
+def plot_all_configs(df: pd.DataFrame, outdir: Path | str = "./plots") -> List[Path]:
+    outdir = _ensure_outdir(outdir)
+    paths: List[Path] = []
+
+    maybe = [
+        plot_config_heatmap(df, outdir),
+        plot_config_distribution(df, outdir, by_model=False),
+        plot_config_distribution(df, outdir, by_model=True),
+        plot_config_tail_rate(df, outdir, thr=0.8),
     ]
     paths.extend([p for p in maybe if p is not None])
     return paths

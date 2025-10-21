@@ -70,7 +70,7 @@ def run_models(
             
             for i in range(n_rounds):
                 round_num = i + 1
-                print(f"[ROUND {round_num}/{n_rounds}] Play {play_idx}/{len(df_cfg)} | Model: {model} | Config: {config_name}")
+                #print(f"[ROUND {round_num}/{n_rounds}] Play {play_idx}/{len(df_cfg)} | Model: {model} | Config: {config_name}")
                 try:
                     res = single_round( model, 
                                         prompt.format(black_card_text=cards["B_"+lang][play[1]], white_cards_options=options_str), 
