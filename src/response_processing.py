@@ -49,8 +49,9 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
     try:
         lang = row["language"]        
         play = row["play"]
-        play = play.replace("'", "").replace("[", "").replace("]", "")
-        play = play.split(',')
+        if isinstance(play,str):
+            play = play.replace("'", "").replace("[", "").replace("]", "")
+            play = play.split(',')
         winners = row.get("winners", [])
 
         if not isinstance(play, (list, tuple)) or len(play) == 0:

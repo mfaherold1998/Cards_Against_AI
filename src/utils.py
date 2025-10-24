@@ -28,7 +28,7 @@ def demote_previous_last_runs(results_dir: Path) -> None:
             try:
                 d.rename(target)
             except Exception as e:
-                print(f"[WARN] No pude renombrar {d.name} -> {target.name}: {e}")
+                print(f"[WARN] It cannot be renamed: {d.name} -> {target.name}: {e}")
 
 
 def write_latest_pointer(results_dir: Path, run_dir: Path) -> None:

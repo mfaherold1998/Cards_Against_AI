@@ -57,13 +57,13 @@ print(f"Rows after cleaning: {len(df_results)}")
 
 print("Saving results...")
 
-xlsx_path = RUN_DIR / "all_configurations_results.xlsx"
-csv_path  = RUN_DIR / "all_configurations_results.csv"
+results_xlsx = RUN_DIR / "all_configurations_results.xlsx"
+results_csv  = RUN_DIR / "all_configurations_results.csv"
 noid_csv = RUN_DIR / "no_id_detected_rows.csv"
 inconsistencies_csv = RUN_DIR / "inconsistent_rows.csv"
 
-df_results.to_excel(xlsx_path, index=False, header=True, sheet_name="results")
-df_results.to_csv(csv_path, index=False)
+df_results.to_excel(results_xlsx, index=False, header=True, sheet_name="results")
+df_results.to_csv(results_csv, index=False)
 
 if not no_id_detected.empty:
     no_id_detected.to_csv(noid_csv, index=False)

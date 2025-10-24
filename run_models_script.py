@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import datetime
 import json
 
-
 from src.data_loader import load_cards, config_games
 from src.model_runner import run_models
 from src.args_parser import get_args
