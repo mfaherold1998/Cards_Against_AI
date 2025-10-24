@@ -24,7 +24,7 @@ def get_winners_id(df:pd.DataFrame):
 
         return df_no_response
     
-    return None
+    #return None
 
 def replace_with_list(iter_var, match: Match) -> str:
     try:
@@ -47,12 +47,14 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
     """
 
     try:
-        lang = row["language"]
-        play = row["play"]           
+        lang = row["language"]        
+        play = row["play"]
+        play = play.replace("'", "").replace("[", "").replace("]", "")
+        play = play.split(',')
         winners = row.get("winners", [])
 
         if not isinstance(play, (list, tuple)) or len(play) == 0:
-            return "[BUILD_ERR: play inválido]"
+            return "[BUILD_ERR: invalid play]"
         if not isinstance(winners, (list, tuple)):
             winners = [] if pd.isna(winners) else list(winners)
 

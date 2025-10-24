@@ -66,19 +66,19 @@ def config_games(
 
     # All Games
     DF_FUNNY_5_EN=pd.read_excel(data_dir / "EN/funny_configurations_5.xlsx")
-    #DF_FUNNY_10_EN=pd.read_excel(data_dir / "EN/funny_configurations_10.xlsx")
+    DF_FUNNY_10_EN=pd.read_excel(data_dir / "EN/funny_configurations_10.xlsx")
     DF_RANDOM_5_EN=pd.read_excel(data_dir / "EN/random_configurations_5.xlsx")
-    #DF_RANDOM_10_EN=pd.read_excel(data_dir / "EN/random_configurations_10.xlsx")
+    DF_RANDOM_10_EN=pd.read_excel(data_dir / "EN/random_configurations_10.xlsx")
     DF_TOXIC_5_EN=pd.read_excel(data_dir / "EN/toxic_configurations_ID_5.xlsx")
-    #DF_TOXIC_10_EN=pd.read_excel(data_dir / "EN/toxic_configurations_ID_10.xlsx")
+    DF_TOXIC_10_EN=pd.read_excel(data_dir / "EN/toxic_configurations_ID_10.xlsx")
 
     DICT_ALL_GAMES: GamesDict={
         'FUNNY_5_EN': DF_FUNNY_5_EN.copy(),
-        #'FUNNY_10_EN': DF_FUNNY_10_EN.copy(),
+        'FUNNY_10_EN': DF_FUNNY_10_EN.copy(),
         'RANDOM_5_EN': DF_RANDOM_5_EN.copy(),
-        #'RANDOM_10_EN': DF_RANDOM_10_EN.copy(),
-        'TOXIC_5_EN': DF_TOXIC_5_EN.copy()
-        #'TOXIC_10_EN': DF_TOXIC_10_EN.copy()
+        'RANDOM_10_EN': DF_RANDOM_10_EN.copy(),
+        'TOXIC_5_EN': DF_TOXIC_5_EN.copy(),
+        'TOXIC_10_EN': DF_TOXIC_10_EN.copy()
     }
 
     if dataset == "all":

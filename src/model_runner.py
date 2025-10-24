@@ -19,7 +19,6 @@ def run_models(
         n_rounds: int,
         models: list[str],
         temperatures: list[float],
-        pick: bool,
         games: Dict[str, pd.DataFrame],
         cards: dict
     ) -> pd.DataFrame:
@@ -54,13 +53,9 @@ def run_models(
         combo_count += 1
         print(f"--- Processing ({combo_count}/{total_combos}) ---")
         print(f"Config: {config_name} | Model: {model} | Temp: {temperature}")
-        print(f"Number of plays: {len(df_cfg)}\n")
+        #print(f"Number of plays: {len(df_cfg)}\n")
         
         for play_idx, play in enumerate(df_cfg.values, start=1): 
-
-            if not pick and play[1] in ["B005", "B091"]:
-                print(f"[SKIP] {play[1]} requires >2 picks.")
-                continue
             
             # Get cards for the prompt
             card_format = "ID:{id} TEXT:{text};"

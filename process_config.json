@@ -1,0 +1,6 @@
+{
+    "data_dir": "./cards_dataset",
+    "save_dir": "./results",
+    "process_run": "last", 
+    "detoxify_model": "original"
+}

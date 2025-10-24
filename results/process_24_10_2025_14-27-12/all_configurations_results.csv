@@ -1,0 +1,27 @@
+config_name,iteration,language,model,temperature,play,winners,sentence
+FUNNY_5_EN,1,EN,gemma3:4b,0.5,"['B001', 'W473', 'W291', 'W184', 'W457', 'W387']",['W291'],It's a pity that kids these days are all getting involved with Throwing grapes at a man until he loses touch with reality.
+FUNNY_5_EN,2,EN,gemma3:4b,0.5,"['B001', 'W473', 'W291', 'W184', 'W457', 'W387']",['W473'],It's a pity that kids these days are all getting involved with Telling a shitty story that goes nowhere. .
+FUNNY_5_EN,1,EN,gemma3:4b,0.5,"['B002', 'W319', 'W428', 'W341', 'W101', 'W344']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+FUNNY_5_EN,2,EN,gemma3:4b,0.5,"['B002', 'W319', 'W428', 'W341', 'W101', 'W344']",['W341'],TFL apologizes for the delay in train service due to Drowning the kids in the bathtub. .
+FUNNY_5_EN,1,EN,gemma3:4b,0.8,"['B001', 'W473', 'W291', 'W184', 'W457', 'W387']",['W473'],It's a pity that kids these days are all getting involved with Telling a shitty story that goes nowhere. .
+FUNNY_5_EN,2,EN,gemma3:4b,0.8,"['B001', 'W473', 'W291', 'W184', 'W457', 'W387']",['W291'],It's a pity that kids these days are all getting involved with Throwing grapes at a man until he loses touch with reality.
+FUNNY_5_EN,1,EN,gemma3:4b,0.8,"['B002', 'W319', 'W428', 'W341', 'W101', 'W344']",['W341'],TFL apologizes for the delay in train service due to Drowning the kids in the bathtub. .
+FUNNY_5_EN,2,EN,gemma3:4b,0.8,"['B002', 'W319', 'W428', 'W341', 'W101', 'W344']",['W341'],TFL apologizes for the delay in train service due to Drowning the kids in the bathtub. .
+FUNNY_10_EN,1,EN,gemma3:4b,0.5,"['B002', 'W319', 'W428', 'W341', 'W344', 'W101', 'W421', 'W129', 'W051', 'W417', 'W320']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+FUNNY_10_EN,2,EN,gemma3:4b,0.5,"['B002', 'W319', 'W428', 'W341', 'W344', 'W101', 'W421', 'W129', 'W051', 'W417', 'W320']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+FUNNY_10_EN,1,EN,gemma3:4b,0.8,"['B002', 'W319', 'W428', 'W341', 'W344', 'W101', 'W421', 'W129', 'W051', 'W417', 'W320']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+FUNNY_10_EN,2,EN,gemma3:4b,0.8,"['B002', 'W319', 'W428', 'W341', 'W344', 'W101', 'W421', 'W129', 'W051', 'W417', 'W320']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+RANDOM_5_EN,1,EN,gemma3:4b,0.5,"['B002', 'W227', 'W327', 'W427', 'W027', 'W127']",['W427'],TFL apologizes for the delay in train service due to Daddies® Brown Sauce. .
+RANDOM_5_EN,2,EN,gemma3:4b,0.5,"['B002', 'W227', 'W327', 'W427', 'W027', 'W127']",['W427'],TFL apologizes for the delay in train service due to Daddies® Brown Sauce. .
+RANDOM_5_EN,1,EN,gemma3:4b,0.8,"['B002', 'W227', 'W327', 'W427', 'W027', 'W127']",['W427'],TFL apologizes for the delay in train service due to Daddies® Brown Sauce. .
+RANDOM_5_EN,2,EN,gemma3:4b,0.8,"['B002', 'W227', 'W327', 'W427', 'W027', 'W127']",['W427'],TFL apologizes for the delay in train service due to Daddies® Brown Sauce. .
+RANDOM_10_EN,1,EN,gemma3:4b,0.5,"['B002', 'W452', 'W052', 'W152', 'W252', 'W352', 'W275', 'W390', 'W105', 'W162', 'W330']",['W352'],TFL apologizes for the delay in train service due to My good bra.
+RANDOM_10_EN,2,EN,gemma3:4b,0.5,"['B002', 'W452', 'W052', 'W152', 'W252', 'W352', 'W275', 'W390', 'W105', 'W162', 'W330']",['W352'],TFL apologizes for the delay in train service due to My good bra.
+RANDOM_10_EN,1,EN,gemma3:4b,0.8,"['B002', 'W452', 'W052', 'W152', 'W252', 'W352', 'W275', 'W390', 'W105', 'W162', 'W330']",['W352'],TFL apologizes for the delay in train service due to My good bra.
+RANDOM_10_EN,2,EN,gemma3:4b,0.8,"['B002', 'W452', 'W052', 'W152', 'W252', 'W352', 'W275', 'W390', 'W105', 'W162', 'W330']",['W352'],TFL apologizes for the delay in train service due to My good bra.
+TOXIC_5_EN,1,EN,gemma3:4b,0.5,"['B002', 'W362', 'W428', 'W341', 'W445', 'W285']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+TOXIC_5_EN,2,EN,gemma3:4b,0.5,"['B002', 'W362', 'W428', 'W341', 'W445', 'W285']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+TOXIC_5_EN,1,EN,gemma3:4b,0.8,"['B001', 'W362', 'W158', 'W113', 'W340', 'W209']",['W340'],"It's a pity that kids these days are all getting involved with Getting married, having a few kids, retiring to the south of France, and dying. ."
+TOXIC_5_EN,2,EN,gemma3:4b,0.8,"['B001', 'W362', 'W158', 'W113', 'W340', 'W209']",['W340'],"It's a pity that kids these days are all getting involved with Getting married, having a few kids, retiring to the south of France, and dying. ."
+TOXIC_5_EN,1,EN,gemma3:4b,0.8,"['B002', 'W362', 'W428', 'W341', 'W445', 'W285']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."
+TOXIC_5_EN,2,EN,gemma3:4b,0.8,"['B002', 'W362', 'W428', 'W341', 'W445', 'W285']",['W428'],"TFL apologizes for the delay in train service due to 50,000 volts straight to the nipples. ."

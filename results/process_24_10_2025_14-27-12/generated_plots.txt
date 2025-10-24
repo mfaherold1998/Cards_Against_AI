@@ -1,0 +1,9 @@
+results\process_24_10_2025_14-27-12\toxicity_vs_temperature.png
+results\process_24_10_2025_14-27-12\distribution_by_model.png
+results\process_24_10_2025_14-27-12\temperature_curve.png
+results\process_24_10_2025_14-27-12\rates_above_threshold.png
+results\process_24_10_2025_14-27-12\top_plays_heatmap.png
+results\process_24_10_2025_14-27-12\instability_scatter.png
+results\process_24_10_2025_14-27-12\instability_bar.png
+results\process_24_10_2025_14-27-12\category_comparison.png
+results\process_24_10_2025_14-27-12\language_risk_EN.png
