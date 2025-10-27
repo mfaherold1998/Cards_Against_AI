@@ -42,7 +42,7 @@ def write_latest_pointer(results_dir: Path, run_dir: Path) -> None:
         print(f"[WARN] Couldn't write LATEST_RUN.txt: {e}")
 
 
-def get_last_run_path_csv(results_dir: Path) -> Path:
+def get_last_run_path_csv(results_dir: Path, name_file = "responses") -> Path:
     """Returns the path to the last run of models responses csv file."""
     
     latest_file = results_dir / "LATEST_RUN.txt"
@@ -53,4 +53,7 @@ def get_last_run_path_csv(results_dir: Path) -> Path:
     if not latest_run_path.exists():
         raise FileNotFoundError(f"The last run folder does not exist: {latest_run_path}")
     
-    return latest_run_path / "all_responses_results.xlsx"
+    if name_file == "responses":
+        return latest_run_path / "all_responses_results.xlsx"
+    elif name_file == "configs":
+        return latest_run_path / "all_configurations_results.xlsx"

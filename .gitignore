@@ -1,3 +1,6 @@
 # Ignore the virtual env
 venv/
 env/
+.env
+.env.local
+*.secret

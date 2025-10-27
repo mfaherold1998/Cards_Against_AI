@@ -62,7 +62,7 @@ def add_detoxify_scores(
     expected: Optional[Iterable[str]] = None,
     aliases: Optional[Dict[str, str]] = None,
     device: Optional[str] = None,
-    inplace: bool = True,
+    inplace: bool = False,
 ) -> pd.DataFrame:
     
     """
