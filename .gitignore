@@ -4,4 +4,4 @@ env/
 .env
 .env.local
 *.secret
-results/*
+results/
