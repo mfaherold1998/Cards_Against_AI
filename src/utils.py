@@ -21,7 +21,7 @@ def demote_previous_last_runs(results_dir: Path) -> None:
     """
     for d in results_dir.glob("last_run_*"):
         if d.is_dir():
-            # Quita solo el primer 'last_' para evitar efectos colaterales
+            # Remove only the first 'last_' to avoid side effects
             new_name = re.sub(r"^last_", "", d.name, count=1)  # last_run_... -> run_...
             target = d.with_name(new_name)
             target = _unique_path(target)
@@ -34,7 +34,6 @@ def demote_previous_last_runs(results_dir: Path) -> None:
 def write_latest_pointer(results_dir: Path, run_dir: Path) -> None:
     """
     Writes a file with the absolute path of the last run.
-    Useful for other modules to quickly determine where to read.
     """
     try:
         (results_dir / "LATEST_RUN.txt").write_text(str(run_dir.resolve()), encoding="utf-8")

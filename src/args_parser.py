@@ -25,4 +25,4 @@ def get_args():
 
     args = parser.parse_args()
 
-    return load_config_file(args.config_file)
+    return load_config_file(args.config_file)  # args.config_file = '*_config.json'

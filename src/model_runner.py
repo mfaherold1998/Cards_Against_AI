@@ -2,6 +2,7 @@ import ollama
 from itertools import product
 from typing import Dict
 import pandas as pd
+from tqdm.auto import tqdm
 
 def single_round(model, prompt, temperature):
 
@@ -34,57 +35,70 @@ def run_models(
                 The White cards available are: {white_cards_options}.
                 Which card do you choose? Remember that the goal is to choose the funniest one.
                 If the black card have more than one space to fill, select a card for each space.
-                As a response, give me just the id of the card (or cards) you choose in a format ID: id1, id2...and so on.  '''
+                As a response, give me just the id of the card (or cards) you choose in a format: "ID: id1, ID:id2..." and so on.  '''
 
     results = []
 
-    total_combos = len(games) * len(models) * len(temperatures)
-    combo_count = 0
+    total_plays = sum(len(df) for df in games.values())
+    total_combinations = len(models) * len(temperatures)
+    total_steps = total_plays * total_combinations * n_rounds
 
-    print(f"\n[START] Running {total_combos} configuration/model/temperature combinations...")
-    print(f"[INFO] Each combination runs {n_rounds} rounds.\n")
+    print(f"\n[START] Running {total_combinations} combinations.")
+    print(f"[INFO] Total rounds to execute: {total_steps}.\n")
 
-    # games: Dict[str, pd.DataFrame]
-    #   key = name of configuration (e.g. "RANDOM_5_EN")
-    #   value = DataFrame of rows [lang, black_id, white_id_1, white_id_2, ...]
+    main_iterator = product(games.items(), models, temperatures)
 
-    for (config_name, df_cfg), model, temperature in product(games.items(), models, temperatures):
+    with tqdm(main_iterator, total=total_combinations, desc="Total Combinations") as pbar_combos:
+        for (config_name, df_cfg), model, temperature in pbar_combos:
 
-        combo_count += 1
-        print(f"--- Processing ({combo_count}/{total_combos}) ---")
-        print(f"Config: {config_name} | Model: {model} | Temp: {temperature}")
-        #print(f"Number of plays: {len(df_cfg)}\n")
-        
-        for play_idx, play in enumerate(df_cfg.values, start=1): 
-            
-            # Get cards for the prompt
-            card_format = "ID:{id} TEXT:{text};"
-            lang = play[0]  
-            white_cards_options = [card_format.format(id=card_id, text=cards["W_"+lang][card_id]) for card_id in play[2:]]
-            options_str = "".join(white_cards_options)
-            
-            for i in range(n_rounds):
-                round_num = i + 1
-                #print(f"[ROUND {round_num}/{n_rounds}] Play {play_idx}/{len(df_cfg)} | Model: {model} | Config: {config_name}")
+            pbar_combos.set_postfix_str(f"Config: {config_name}, Model: {model}, Temp: {temperature}")
+
+            play_iterator = df_cfg.itertuples(index=False, name=None)
+
+            for play in play_iterator:                
+                lang = play[0]  
+                black_card_id = play[1]
+                white_card_ids = play[2:]               
+                card_format = "ID:{id} TEXT:{text};"
+                
                 try:
-                    res = single_round( model, 
-                                        prompt.format(black_card_text=cards["B_"+lang][play[1]], white_cards_options=options_str), 
-                                        temperature)
-                    content = getattr(getattr(res, "message", None), "content", "")
-                except Exception as e:
-                    content = f"ERROR: {type(e).__name__}: {e}"
-                    print(f"[ERROR] during round {round_num}: {content}")
+                    white_cards_options = [
+                        card_format.format(id=card_id, text=cards["W_"+lang.upper()][card_id]) 
+                        for card_id in white_card_ids
+                    ]
+                    options_str = "".join(white_cards_options)
+                    black_card_text = cards["B_"+lang.upper()][black_card_id]
 
-                results.append({
-                                "config_name": config_name,
-                                "iteration": i+1,
-                                "language": lang,
-                                "model": model,                
-                                "temperature": temperature,    
-                                "play": [card_id for card_id in play[1:]],
-                                "response": content                           
-                            })
+                except KeyError as e:
+                    print(f"\n[ERROR] Missing card ID {e} in cards dict for lang {lang.upper()}. Skipping play.")
+                    continue
+
+                for i in range(n_rounds):
                     
-    
-    print(f"[END] All combinations completed. Total results: {len(results)} rows.\n")
+                    try:
+                        res = single_round(
+                            model, 
+                            prompt.format(black_card_text=black_card_text, white_cards_options=options_str), 
+                            temperature
+                        )
+                        content = getattr(getattr(res, "message", None), "content", "")
+                        
+                    except Exception as e:
+                        content = f"ERROR: {type(e).__name__}: {e}"
+                        # Print errors, but do not interrupt the progress bar.
+                        print(f"\n[ERROR] during round {i+1} for {config_name}|{model}: {content}")
+                        
+                    # 4. Acumular resultados
+                    results.append({
+                        "config": config_name,
+                        "iteration": i + 1,
+                        "lang": lang,
+                        "model": model,                
+                        "temperature": temperature,    
+                        "play": [black_card_id] + list(white_card_ids),
+                        "response": content                           
+                    })
+
+
+    print(f"\n[END] All combinations completed. Total results: {len(results)} rows.")
     return pd.DataFrame(results)
