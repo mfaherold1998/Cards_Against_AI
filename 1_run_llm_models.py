@@ -35,7 +35,7 @@ print("Loading BLACK and WHITE cards text...")
 
 cards_text_dir = config_params.get("cards_texts_dir", "./cards_dataset")
 langs = config_params.get("languages", ["EN"])
-DIC_ALL_CARDS = load_cards(cards_text_dir, langs, file_type='xlsx')  # Change the file_tipe here!!
+DIC_ALL_CARDS = load_cards(cards_text_dir, langs)  # file_type xlsx by default
 
 print("Loading games configurations...")
 
@@ -43,8 +43,7 @@ DIC_ALL_GAMES = load_games(
     data_dir=cards_text_dir,
     langs=langs,
     dataset=config_params.get("dataset_size", "test"),    
-    subset_rows=config_params.get("subset_rows", 2),
-    file_type='xlsx')  # Change the file_tipe here!!
+    subset_rows=config_params.get("subset_rows", 2))  # file_type xlsx by default
 
 print("Running ollama models...")
 

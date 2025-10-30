@@ -1,4 +1,6 @@
 from pathlib import Path
+from typing import Literal
+import pandas as pd
 import re
 
 def _unique_path(p: Path) -> Path:
@@ -30,7 +32,6 @@ def demote_previous_last_runs(results_dir: Path) -> None:
             except Exception as e:
                 print(f"[WARN] It cannot be renamed: {d.name} -> {target.name}: {e}")
 
-
 def write_latest_pointer(results_dir: Path, run_dir: Path) -> None:
     """
     Writes a file with the absolute path of the last run.
@@ -40,19 +41,23 @@ def write_latest_pointer(results_dir: Path, run_dir: Path) -> None:
     except Exception as e:
         print(f"[WARN] Couldn't write LATEST_RUN.txt: {e}")
 
-
-def get_last_run_path_csv(results_dir: Path, name_file = "responses") -> Path:
-    """Returns the path to the last run of models responses csv file."""
+def load_last_run_data(results_dir: Path, file_type:Literal['xlsx', 'csv'] = 'xlsx') -> Path:
+    """Returns the path to the last run of models to get the csv or xlsx responses file."""
     
-    latest_file = results_dir / "LATEST_RUN.txt"
-    if not latest_file.exists():
-        raise FileNotFoundError(f"File {latest_file} not found.")
+    last_run_file = results_dir / "LATEST_RUN.txt"
+    if not last_run_file.exists():
+        raise FileNotFoundError(f"File {last_run_file} not found.")
     
-    latest_run_path = Path(latest_file.read_text(encoding="utf-8").strip())
-    if not latest_run_path.exists():
-        raise FileNotFoundError(f"The last run folder does not exist: {latest_run_path}")
+    lats_run_path = Path(last_run_file.read_text(encoding="utf-8").strip())
+    if not lats_run_path.exists():
+        raise FileNotFoundError(f"The last run folder does not exist: {lats_run_path}")
     
-    if name_file == "responses":
-        return latest_run_path / "all_responses_results.xlsx"
-    elif name_file == "configs":
-        return latest_run_path / "all_configurations_results.xlsx"
+    file_path = lats_run_path / f"all_models_responses.{file_type}"
+    if file_type == 'xlsx':
+        df = pd.read_excel(file_path)
+    elif file_type == 'csv':
+        df = pd.read_csv(file_path, sep=',')
+    else:
+        raise ValueError("file_type must be 'xlsx' or 'csv'")
+    
+    return df

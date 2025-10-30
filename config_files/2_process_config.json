@@ -1,6 +1,7 @@
 {
-    "data_dir": "./cards_dataset",
-    "save_dir": "./results",
-    "process_run": "last", 
-    "detoxify_model": "original"
+    "results_dir": "./results",
+    "cards_texts_dir": "./cards_dataset",
+    "languages": ["EN"], 
+    "run_to_process": "last", 
+    "file_type": "xlsx"
 }

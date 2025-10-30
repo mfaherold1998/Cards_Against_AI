@@ -117,4 +117,3 @@ def load_games(
         return {k: v.iloc[:subset_rows].copy() for k, v in DICT_ALL_GAMES.items()}
     
     raise ValueError(f"Invalid value for 'dataset': {dataset}. Must be 'all' or 'test'.")
-    

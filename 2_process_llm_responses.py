@@ -1,108 +1,76 @@
 print("Importing Libraries")
 from pathlib import Path
 from datetime import datetime
-import pandas as pd
+#import pandas as pd
 
-from src.data_loader import load_cards
 from src.args_parser import get_args
-from src.response_processing import get_winners_id, build_sentence
-from src.toxicity_detox import add_detoxify_scores
-from src.plotting import plot_all, plot_all_configs
-from src.toxicity_perspective import *
-from src.utils import *
+from src.data_loader import load_cards
+from src.response_processing import split_responses, build_sentence
+from src.utils import load_last_run_data
 
 print("Parsing config.json file to get parameters...")
 
 config_params = get_args()
 
 date_tag = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
-results_dir = Path(config_params.get("save_dir", "./results"))
-RUN_DIR = results_dir / f"process_{date_tag}"
+results_dir = Path(config_params.get("results_dir", "./results"))
+RUN_DIR = results_dir / f"processing_{date_tag}"
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 print("Loading BLACK and WHITE cards text...")
 
-data_dir = config_params.get("data_dir", "./cards_dataset")
-DIC_ALL_CARDS = load_cards(data_dir)
+cards_text_dir = config_params.get("cards_texts_dir", "./cards_dataset")
+langs = config_params.get("languages", ["EN"])
+DIC_ALL_CARDS = load_cards(cards_text_dir, langs, file_type='xlsx')
 
 print("Loading model responses...")
 
-process_run = config_params.get("process_run","last")
+run_to_process = config_params.get("run_to_process","last")  # "last", "all"
+file_type = config_params.get("file_type","xlsx")
 
-if process_run == "last":
-    df_results = pd.read_excel(get_last_run_path_csv(results_dir))
-elif process_run == "all":
+if run_to_process == "last":
+    df_results = load_last_run_data(results_dir)  # file_type xlsx by default
+elif run_to_process == "all":
+    all_runs = []
+    print("IN process...")    
     pass  # Write this part
 else:
-    raise ValueError(f"Not valid value for 'process_run': {process_run}")
+    raise ValueError(f"Not valid value for 'run_to_process': {run_to_process}. It must be last or all.")
 
 print(f"Rows loaded: {len(df_results)}")
 
-print("Starting MODEL RESPONSES PROCESSING ...")
+print("Starting model responses processing...")
 
-# df with rows where the answer does not contains a white card ID
-no_id_detected = get_winners_id(df_results)
-if not no_id_detected.empty:
-    print(f"Rows without ID detected: {len(no_id_detected)}")
+print("Filtering good responses...")
 
-df_results['sentence'] = df_results.apply(build_sentence, axis=1, args=(DIC_ALL_CARDS,))
+# Spliting the dataset into good answers and answers with problems
+df_winners_id, df_no_id_detected, df_mismatch_id_spaces = split_responses(df_results, DIC_ALL_CARDS)
 
-# How many times the model choose less or more cards than blank spaces
-mask_inconsist = df_results["sentence"].str.contains(r"\[WARN", na=False)
-df_inconsistencies = df_results.loc[mask_inconsist].copy()
-if not df_inconsistencies.empty:
-    print(f"Inconsistent rows (WARN) detected: {len(df_inconsistencies)}")
-df_results = df_results.loc[~mask_inconsist].copy()
+if not df_no_id_detected.empty:
+    print(f"Rows without cards id detected: {len(df_no_id_detected)}")
+    no_id_xlsx_path = RUN_DIR / "all_games_no_id_detected.xlsx"
+    no_id_csv_path = RUN_DIR / "all_games_no_id_detected.csv"
+    df_no_id_detected.to_excel(no_id_xlsx_path, index=False, header=True, sheet_name="no_id_results")
+    df_no_id_detected.to_csv(no_id_csv_path, index=False)
 
-print(f"Rows after cleaning: {len(df_results)}")
+if not df_mismatch_id_spaces.empty:
+    print(f"Rows rows where the count between ids and spaces does not match detected: {len(df_mismatch_id_spaces)}")
+    mismacht_xlsx_path = RUN_DIR / "all_games_mismatch.xlsx"
+    mismacht_csv_path = RUN_DIR / "all_games_mismatch.csv"
+    df_mismatch_id_spaces.to_excel(mismacht_xlsx_path, index=False, header=True, sheet_name="mismatch_results")
+    df_mismatch_id_spaces.to_csv(mismacht_csv_path, index=False)
 
-print("Saving results...")
+print(f"Results dataframe rows after cleaning detected: {len(df_winners_id)}")
 
-results_xlsx = RUN_DIR / "all_configurations_results.xlsx"
-results_csv  = RUN_DIR / "all_configurations_results.csv"
-noid_csv = RUN_DIR / "no_id_detected_rows.csv"
-inconsistencies_csv = RUN_DIR / "inconsistent_rows.csv"
+print("Building sentences...")
 
-df_results.to_excel(results_xlsx, index=False, header=True, sheet_name="results")
-df_results.to_csv(results_csv, index=False)
+df_winners_id['sentence'] = df_winners_id.apply(build_sentence, axis=1, args=(DIC_ALL_CARDS,))
 
-if not no_id_detected.empty:
-    no_id_detected.to_csv(noid_csv, index=False)
-if not df_inconsistencies.empty:
-    df_inconsistencies.to_csv(inconsistencies_csv, index=False)
+print(f"Saving results in {RUN_DIR.resolve()}...")
 
-print("Clasifying Toxicity with Detoxify (local clasifier)...")
-print("Adding scores to sentences...")
+good_results_xlsx_path = RUN_DIR / "all_games_good_results.xlsx"
+good_results_csv_path  = RUN_DIR / "all_games_good_results.csv"
+df_winners_id.to_excel(good_results_xlsx_path, index=False, header=True, sheet_name="good_results")
+df_winners_id.to_csv(good_results_csv_path, index=False)
 
-df_results_detoxify_scores = add_detoxify_scores(
-    df_results, 
-    text_col='sentence', 
-    model=config_params.get("detoxify_model", "original"))
-
-# Remove columns of NAN values in case some category is not present
-df_results_detoxify_scores = df_results_detoxify_scores.dropna(axis=1, how='all')
-
-print("Clasifying Toxicity with Perspective (Google clasifier)...")
-print("Adding scores to sentences...")
-
-perspective_responses = analyze_texts(df_results["sentence"], attributes=DEFAULT_ATTRIBUTES)
-save_perspective_responses(perspective_responses, results_dir / "perspective_analysis.json")
-
-df_with_scores = attach_perspective_scores(df_results, perspective_responses, text_col="sentence")
-
-df_with_scores.to_csv(results_dir / "perspective_results.csv", index=False)
-print(f"Saved in: {results_dir}")
-
-print("Creating Graphics (saving .png pictures)...")
-
-if df_results_detoxify_scores.empty:
-    print("[WARN] There are no rows to plot after preprocessing..")
-
-plot_paths = plot_all(df_results_detoxify_scores, outdir=RUN_DIR)
-plot_all_configs(df_results_detoxify_scores, outdir=RUN_DIR)
-
-with open(RUN_DIR / "generated_plots.txt", "w", encoding="utf-8") as f:
-    for p in plot_paths:
-        f.write(str(p) + "\n")
-
-print(f"Finish. Run folder: {RUN_DIR.resolve()}")
+print("[END]")

@@ -5,71 +5,110 @@ import re
 pattern_id = r"(W\d{3})"
 pattern_spaces = r"__+"
 
-def get_winners_id(df:pd.DataFrame):
-    
-    if 'response' in df.columns:    
-           
-        df['winners'] = df['response'].str.findall(pattern_id)
-
-        # If no ID is found in the response...
-        mask = df['winners'].apply(lambda x: len(x) == 0)    
-        df_no_response = df[mask].copy()  # All plays without answer
+def _convert_play_to_list(play_row):
+        # Convert play str "['B001','W001',...]" in a list
+        try:
+            if isinstance(play_row, str):            
+                play = play_row.replace("'", "").replace("[", "").replace("]", "")
+                play = play.split(',')
+                return "[BUILD_ERR: invalid play]" if len(play)==0 else play
+                
+            elif isinstance(play_row, list):
+                return play_row
+            
+            # others types (Nan, None...)
+            return []
         
-        # Remove the rows without answer from df_results
-        index_to_remove = df_no_response.index
-        #df_filter = df_results.drop(index_to_remove)  # create new df
-        df.drop(index_to_remove, inplace=True) # use df_result
+        except Exception:
+            print("[ERROR: Exception happends in _convert_play_to_list(). Returning None]")
+            return None
 
-        df.drop(columns=['response'], inplace=True)
-
-        return df_no_response
+def _matched_ID(row:pd.Series, cards: dict) -> bool:     
     
-    #return None
+    play = _convert_play_to_list(row["play"])
+    winners = row.get("winners")        
+    if not isinstance(winners, list):
+        winners = [] if pd.isna(winners) else list(winners)
 
-def replace_with_list(iter_var, match: Match) -> str:
     try:
-        return next(iter_var)
-    except StopIteration:
-        return match.group(0)
+        black_id = play[0]
+        lang = row["lang"]
+        black_text = cards[f"B_{lang}"][black_id]
+        if black_text is None:
+             # If black card cannot be find assume a malfunction or error.
+            return False
+        n_spaces = len(re.findall(pattern_spaces, black_text))
+        n_winners = len(winners)
+        return n_spaces == n_winners
+    
+    except KeyError:
+        return False
+    except Exception:
+        return False       
+    
+def split_responses(df:pd.DataFrame, cards: dict):
+    ''' 
+        Returns 3 dataframes:
+        1. Filtered results of good responses (ID count matches space count).
+        2. Responses without a card id in the answer.
+        3. Response with mismatched ID count and space count.
+    '''
+    
+    df_temp = df.copy()
+
+    if 'response' not in df_temp.columns:
+        print("There is not 'response' column to analyze. Returning three empty DataFrames.")
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    df_temp['winners'] = df_temp['response'].str.findall(pattern_id)
+
+    # Split 1: responses without id
+    mask_no_id = df_temp['winners'].apply(lambda x: len(x) == 0)    
+    df_no_response = df_temp[mask_no_id].drop(columns=['winners']).copy()
+    
+    # We'll stick with the answers that do have at least one ID
+    df_temp = df_temp[~mask_no_id].copy()    
+    df_temp = df_temp.drop(columns=['response'])
+
+    # Split 2: Apply the row validation function (axis=1)
+    mask_matched = df_temp.apply(_matched_ID, cards=cards, axis=1)
+    # df_mismatch: contains the rows where the count does not match (False)
+    df_mismatch = df_temp[~mask_matched].copy()
+
+    # df_filtered: we leave the rows where the count DOES match (True)
+    df_filtered = df_temp[mask_matched].copy()
+
+    return df_filtered, df_no_response, df_mismatch
 
 def build_sentence(row: pd.Series, cards: dict) -> str:
 
     """
     Builds the final sentence by replacing '__' in the black card
-    with the texts of the winning white cards ('winners').
+    with the texts of the winning white cards ('winners') considering models answers
+    with an unique card id.
 
     Parameters:
-    - row: row of df_results (with columns 'language', 'play', 'winners')
-    - cards: global card dictionary, e.g., DIC_ALL_CARDS
+    - row: row of dataframe (with columns 'language', 'play', 'winners')
+    - cards: global card dictionary (e.g. DIC_ALL_CARDS).
 
     Returns:
-    - string with the final sentence (or error message if something goes wrong)
+    - final sentence string (or error message if something goes wrong)
     """
 
     try:
-        lang = row["language"]        
-        play = row["play"]
-        if isinstance(play,str):
-            play = play.replace("'", "").replace("[", "").replace("]", "")
-            play = play.split(',')
-        winners = row.get("winners", [])
-
-        if not isinstance(play, (list, tuple)) or len(play) == 0:
-            return "[BUILD_ERR: invalid play]"
-        if not isinstance(winners, (list, tuple)):
+        lang = row["lang"]  
+        play = _convert_play_to_list(row["play"])
+        winners = row.get("winners")        
+        if not isinstance(winners, list):
             winners = [] if pd.isna(winners) else list(winners)
 
         black_id = play[0]
         black_text = cards[f"B_{lang}"][black_id]
-
-        white_texts = [cards[f"W_{lang}"].get(w, f"[{w}]") for w in winners]
-
-        n_spaces = len(re.findall(pattern_spaces, black_text))
-        n_winners = len(white_texts)
-        warning = ""
-        if n_spaces != n_winners:
-            warning = f"[WARN: {n_spaces} blank(s), {n_winners} winner(s)] "
+        if black_text is None:
+             return f"[BUILD_ERR: black card {black_id} not found for lang {lang}]"
         
+        white_texts = [cards[f"W_{lang}"].get(w, f"[{w}]") for w in winners]
+        # iteartor to build the sentence    
         it = iter(white_texts)
 
         def _repl(m):
@@ -77,9 +116,7 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
 
         sentence = re.sub(pattern_spaces, _repl, black_text)
 
-        return warning + sentence.strip()
+        return sentence.strip()
 
-    except KeyError as e:
-        return f"[BUILD_ERR: missing card id {e}]"
     except Exception as e:
         return f"[BUILD_ERR {type(e).__name__}: {e}]"
