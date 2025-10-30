@@ -11,7 +11,7 @@ from dotenv import load_dotenv, find_dotenv
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 
-from src.utils import load_last_run_data
+from src.utils import load_last_data
 
 PERSPECTIVE_DISCOVERY_URL = "https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1"
 
@@ -43,7 +43,7 @@ if not PERSPECTIVE_API_KEY:
 
 
 def load_df_texts(results_dir) -> pd.DataFrame :
-    df = load_last_run_data(results_dir, name_file ='configs')
+    df = load_last_data(results_dir, name_file ='configs')
     if 'sentence' not in df.columns:
         raise KeyError(f"There is not 'sentence' collumn in the file: {list(df.columns)}")
     return df

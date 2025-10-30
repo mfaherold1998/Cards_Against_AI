@@ -1,0 +1,7 @@
+{
+    "results_dir": "./results",
+    "file_type": "xlsx",
+    "detoxify_model": "original",
+    "device": "cpu",
+    "batch_size": 64
+}

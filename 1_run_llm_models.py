@@ -6,7 +6,7 @@ import json
 from src.args_parser import get_args
 from src.data_loader import load_cards, load_games
 from src.model_runner import run_models
-from src.utils import demote_previous_last_runs, write_latest_pointer
+from src.utils import demote_previous_last_runs, write_latest_pointer, PointerFile, ResultsName
 
 print("Parsing config.json file to get parameters...")
 
@@ -25,7 +25,7 @@ RUN_DIR = results_dir / f"last_run_{date_tag}"
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 # Write a pointer to the path of the last run
-write_latest_pointer(results_dir, RUN_DIR)  # From utils.py
+write_latest_pointer(results_dir, RUN_DIR, PointerFile.LATEST_RUN.value)  # From utils.py
 
 # Save used configuration in RUN_DIR
 with open(RUN_DIR / "used_config.json", "w", encoding="utf-8") as f:
@@ -57,8 +57,8 @@ df_results = run_models(
 
 print(f"Saving results in {RUN_DIR.resolve()}...")
 
-xlsx_path = RUN_DIR / "all_models_responses.xlsx"
-csv_path  = RUN_DIR / "all_models_responses.csv"
+xlsx_path = RUN_DIR / f"{ResultsName.LLM_RESPONSES.value}.xlsx"
+csv_path  = RUN_DIR / f"{ResultsName.LLM_RESPONSES.value}.csv"
 df_results.to_excel(xlsx_path, index=False, header=True, sheet_name="responses")
 df_results.to_csv(csv_path, index=False)
 

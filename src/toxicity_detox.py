@@ -11,7 +11,7 @@ DEFAULT_EXPECTED = [
 ]
 DEFAULT_ALIASES = {"sexually_explicit": "sexual_explicit"}
 
-def get_available_labels(model: Detoxify, aliases: Dict[str, str]) -> set:
+def _get_available_labels(model: Detoxify, aliases: Dict[str, str]) -> set:
 
     """
     Query the checkpoint for the tags it actually returns and normalize them with aliases.
@@ -23,7 +23,7 @@ def get_available_labels(model: Detoxify, aliases: Dict[str, str]) -> set:
     # normalizes names with aliases
     return {aliases.get(k, k) for k in probe.keys()}
 
-def detoxify_batch(
+def _detoxify_batch(
     texts: List[str],
     model: Detoxify,
     tags: Iterable[str],
@@ -56,13 +56,12 @@ def detoxify_batch(
 def add_detoxify_scores(
     df: pd.DataFrame,
     text_col: str,
-    model: str | Detoxify = "original",
+    model: str | Detoxify,
+    device: Optional[str] = None,
     batch_size: int = 64,
     prefix: str = "detox_",
     expected: Optional[Iterable[str]] = None,
     aliases: Optional[Dict[str, str]] = None,
-    device: Optional[str] = None,
-    inplace: bool = False,
 ) -> pd.DataFrame:
     
     """
@@ -71,12 +70,13 @@ def add_detoxify_scores(
     - 'expected'/ 'aliases': Lists of expected tags and optional mappings.
     - 'inplace': If False, works on a copy of the DataFrame.
     """
+
+    df_temp = df.copy()
     
-    assert text_col in df.columns, f"Column '{text_col}' is missing"
+    # Check that the column with the sentences exists
+    assert text_col in df_temp.columns, f"Column '{text_col}' is missing"
 
-    if not inplace:
-        df = df.copy()
-
+    # Set the Detoxify model
     if isinstance(model, Detoxify):
         tox_model = model
     else:
@@ -84,24 +84,26 @@ def add_detoxify_scores(
             device = "cuda" if torch.cuda.is_available() else "cpu"
         tox_model = Detoxify(model, device=device)
 
+    # Determining the Deroxify model tags
     aliases = aliases or DEFAULT_ALIASES
     expected = list(expected or DEFAULT_EXPECTED)
-    available = get_available_labels(tox_model, aliases)
-    
-    targets = [t for t in expected if t in available]
+    available = _get_available_labels(tox_model, aliases)
+    targets = [t for t in expected if t in available]    
     if not targets:
         raise RuntimeError(
             f"No matching labels. Available from model: {sorted(available)}; expected: {sorted(expected)}"
         )
 
-    scores = detoxify_batch(df[text_col].astype(str).tolist(), tox_model, targets, aliases, batch_size=batch_size)
+    # Getting scores
+    scores = _detoxify_batch(df_temp[text_col].astype(str).tolist(), tox_model, targets, aliases, batch_size=batch_size)
 
     for k, arr in scores.items():
-        df[f"{prefix}{k}"] = np.clip(arr, 0.0, 1.0)
+        df_temp[f"{prefix}{k}"] = np.clip(arr, 0.0, 1.0)
 
     tox_col = f"{prefix}toxicity"
-    if tox_col in df.columns:
-        df[f"{prefix}tox_gt_05"] = (df[tox_col] >= 0.5).astype(int)
-        df[f"{prefix}tox_gt_08"] = (df[tox_col] >= 0.8).astype(int)
+    
+    if tox_col in df_temp.columns:
+        df_temp[f"{prefix}tox_gt_05"] = (df_temp[tox_col] >= 0.5).astype(int)
+        df_temp[f"{prefix}tox_gt_08"] = (df_temp[tox_col] >= 0.8).astype(int)
 
-    return df
+    return df_temp

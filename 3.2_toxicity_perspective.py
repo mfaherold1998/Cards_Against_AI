@@ -1,19 +1,3 @@
-
-from src.toxicity_detox import add_detoxify_scores
-from src.plotting import plot_all, plot_all_configs
-from src.toxicity_perspective import *
-
-print("Clasifying Toxicity with Detoxify (local clasifier)...")
-print("Adding scores to sentences...")
-
-df_results_detoxify_scores = add_detoxify_scores(
-    df_results, 
-    text_col='sentence', 
-    model=config_params.get("detoxify_model", "original"))
-
-# Remove columns of NAN values in case some category is not present
-df_results_detoxify_scores = df_results_detoxify_scores.dropna(axis=1, how='all')
-
 print("Clasifying Toxicity with Perspective (Google clasifier)...")
 print("Adding scores to sentences...")
 
