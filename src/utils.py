@@ -4,6 +4,8 @@ import pandas as pd
 import re
 from enum import Enum
 
+from dotenv import load_dotenv, find_dotenv
+
 class PointerFile(Enum):
     """Standard filenames for trace pointers."""
     LATEST_RUN = "LATEST_RUN"
@@ -16,6 +18,14 @@ class ResultsName(Enum):
     MISMATCH_RESPONSES = "all_games_mismatch"
     NO_ID_RESPONSES = "all_games_no_id_detected"
     DETOXIFY_SCORES = "all_games_detoxify_scores"
+    PERSPECTIVE_SCORES = "all_games_perspective_scores"
+
+def load_env() -> None:
+    
+    found = find_dotenv(usecwd=True)
+    if found:
+        load_dotenv(found)
+        return
 
 def _smart_read_file (file_root:Path | str, file_type:str):
 

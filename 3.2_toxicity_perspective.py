@@ -1,22 +1,43 @@
+print("Importing Libraries")
+
+from pathlib import Path
+from src.args_parser import get_args
+from src.toxicity_perspective import analyze_texts, add_perspective_scores
+from src.utils import get_last_pointer_dir, load_last_data, PointerFile, ResultsName
+
+print("Parsing config.json file to get parameters...")
+
+config_params = get_args()
+results_dir = Path(config_params.get("results_dir", "./results"))
+
+# Get latest processing directory
+RUN_DIR = get_last_pointer_dir(results_dir, PointerFile.LATEST_PROCESS.value)
+file_to_process_name = ResultsName.GOOD_RESPONSES.value
+file_type = config_params.get("file_type", "xlsx")
+
+print(f"Loading data: {file_to_process_name}...")
+
+df_responses = load_last_data(RUN_DIR, file_to_process_name, file_type)
+if 'sentence' not in df_responses.columns:
+    raise KeyError(f"There is not 'sentence' column in the file: {list(df_responses.columns)}")
+
 print("Clasifying Toxicity with Perspective (Google clasifier)...")
 print("Adding scores to sentences...")
 
-perspective_responses = analyze_texts(df_results["sentence"], attributes=DEFAULT_ATTRIBUTES)
-save_perspective_responses(perspective_responses, results_dir / "perspective_analysis.json")
+# Getting the responses from the API -> List[Dict]
+perspectives_scores = analyze_texts(df_responses["sentence"])
 
-df_with_scores = attach_perspective_scores(df_results, perspective_responses, text_col="sentence")
+df_perspectives_scores = add_perspective_scores(df_responses, perspectives_scores, text_col="sentence")
 
-df_with_scores.to_csv(results_dir / "perspective_results.csv", index=False)
-print(f"Saved in: {results_dir}")
+# Remove columns of NAN values in case some category is not present
+#df_perspectives_scores = df_perspectives_scores.dropna(axis=1, how='all')
 
-print("Creating Graphics (saving .png pictures)...")
+print(f"Saving results in {RUN_DIR.resolve()}...")
 
-if df_results_detoxify_scores.empty:
-    print("[WARN] There are no rows to plot after preprocessing..")
+perspective_scores_xlsx_path = RUN_DIR / f"{ResultsName.PERSPECTIVE_SCORES.value}.xlsx"
+perspective_scores_csv_path  = RUN_DIR / f"{ResultsName.PERSPECTIVE_SCORES.value}.csv"
+df_perspectives_scores.to_excel(perspective_scores_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
+df_perspectives_scores.to_csv(perspective_scores_csv_path, index=False)
 
-plot_paths = plot_all(df_results_detoxify_scores, outdir=RUN_DIR)
-plot_all_configs(df_results_detoxify_scores, outdir=RUN_DIR)
+print("[END]")
 
-with open(RUN_DIR / "generated_plots.txt", "w", encoding="utf-8") as f:
-    for p in plot_paths:
-        f.write(str(p) + "\n")

@@ -3,15 +3,20 @@ from __future__ import annotations
 import json
 import os
 import time
+import pandas as pd
 from pathlib import Path
 from typing import Iterable, List, Dict, Optional, Sequence
 
-import pandas as pd
-from dotenv import load_dotenv, find_dotenv
+from src.utils import load_dotenv
+
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 
-from src.utils import load_last_data
+load_dotenv()
+
+PERSPECTIVE_API_KEY = os.getenv("PERSPECTIVE_API_KEY")
+if not PERSPECTIVE_API_KEY:
+    raise RuntimeError("PERSPECTIVE_API_KEY is not defined.")
 
 PERSPECTIVE_DISCOVERY_URL = "https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1"
 
@@ -25,39 +30,18 @@ DEFAULT_ATTRIBUTES: Sequence[str] = (
     "SEXUALLY_EXPLICIT"
 )
 
-def _load_env_once() -> None:
-    
-    found = find_dotenv(usecwd=True)
-    if found:
-        load_dotenv(found)
-        return
-
-cwd_path = Path(os.getcwd())
-variables_env_path = cwd_path.parent / '.env'
-
-_load_env_once()
-
-PERSPECTIVE_API_KEY = os.getenv("PERSPECTIVE_API_KEY")
-if not PERSPECTIVE_API_KEY:
-    raise RuntimeError("PERSPECTIVE_API_KEY is not defined.")
-
-
-def load_df_texts(results_dir) -> pd.DataFrame :
-    df = load_last_data(results_dir, name_file ='configs')
-    if 'sentence' not in df.columns:
-        raise KeyError(f"There is not 'sentence' collumn in the file: {list(df.columns)}")
-    return df
-
-def save_json(scores, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
+def save_json(scores, results_dir: Path) -> None:
+    with results_dir.open("w", encoding="utf-8") as f:
         json.dump(scores, f, ensure_ascii=False, indent=2)
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+        obj = json.load(f)
+    if not isinstance(obj, list):
+        raise ValueError("The Json file must be a list of objects.")
+    return obj
 
-def build_perspective_client(api_key: str):
+def _build_perspective_client(api_key: str):
     """
     Create the Perspective client (static discovery).
     """
@@ -74,7 +58,7 @@ def build_perspective_client(api_key: str):
 def analyze_texts(
     texts: Iterable[str],
     attributes: Sequence[str] = DEFAULT_ATTRIBUTES,
-    languages: Optional[Sequence[str]] = None,
+    langs: Optional[Sequence[str]] = None,
     max_retries: int = 5,
     base_backoff: float = 1.0,
 ) -> List[Dict]:
@@ -85,7 +69,7 @@ def analyze_texts(
     - requestedAttributes, languages ​​(echo)
     With exponential retries for 429/5xx.
     """
-    client = build_perspective_client(PERSPECTIVE_API_KEY)
+    client = _build_perspective_client(PERSPECTIVE_API_KEY)
     results: List[Dict] = []
 
     for idx, text in enumerate(texts):
@@ -93,26 +77,32 @@ def analyze_texts(
             "comment": {"text": str(text) if text is not None else ""},
             "requestedAttributes": {attr: {} for attr in attributes},
         }
-        if languages:
-            analyze_request["languages"] = list(languages)
+        if langs:
+            analyze_request["languages"] = list(langs)
 
         attempt = 0
         
         while True:
             try:
-                resp = client.comments().analyze(body=analyze_request).execute()
-                resp["original_text"] = text
-                resp["requestedAttributes"] = list(attributes)
-                if languages:
-                    resp["languages"] = list(languages)
-                results.append(resp)
-                # Log
+                # Get the scores from Perspective per sentence
+                res = client.comments().analyze(body=analyze_request).execute()
+                # Include original text in response for traceability
+                res["original_text"] = text
+                res["requestedAttributes"] = list(attributes)
+                if langs:
+                    res["languages"] = list(langs)
+                results.append(res)
+                
+                # Preparing to Logging
                 prefix = (text or "")[:40].replace("\n", " ")
                 print(f"[{idx+1}] Analizing: {prefix!r}...")
                 break
+
             except HttpError as e:
+                # Possible errors from the API
                 status = getattr(e, "status_code", None) or getattr(e.resp, "status", None)
                 if status and int(status) in (429, 500, 502, 503, 504) and attempt < max_retries:
+                    # Implemeting sleep for retraying
                     sleep_s = base_backoff * (2**attempt)
                     print(f"HTTP {status} – retrying in {sleep_s:.1f}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(sleep_s)
@@ -125,6 +115,7 @@ def analyze_texts(
                     "error": f"HttpError {status}",
                 })
                 break
+
             except Exception as e:
                 print(f"ERROR in text #{idx+1}: {e}")
                 results.append({
@@ -135,7 +126,7 @@ def analyze_texts(
 
     return results
 
-def scores_to_dataframe(
+def _scores_to_dataframe(
     responses: List[Dict],
     attributes: Optional[Sequence[str]] = None,
     text_col: str = "original_text",
@@ -161,9 +152,16 @@ def scores_to_dataframe(
                 for a in attributes:
                     row[a] = float("nan")
         rows.append(row)
-    return pd.DataFrame(rows)
 
-def attach_perspective_scores(
+        df = pd.DataFrame(rows)
+
+        if "TOXICITY" in df.columns:
+            df[f"tox_gt_05"] = (df["TOXICITY"] >= 0.5).astype(int)
+            df[f"tox_gt_08"] = (df["TOXICITY"] >= 0.8).astype(int)
+
+    return df
+
+def add_perspective_scores(
     df: pd.DataFrame,
     responses: List[Dict],
     text_col: str = "sentence",
@@ -171,7 +169,7 @@ def attach_perspective_scores(
     """
     Concatenate the scores assuming the same order.
     """
-    df_scores = scores_to_dataframe(responses, text_col=text_col)
+    df_scores = _scores_to_dataframe(responses, text_col=text_col)
 
     # If lengths match, concatenate by index
     if len(df_scores) == len(df):
@@ -179,15 +177,3 @@ def attach_perspective_scores(
 
     # Fallback: merge by text
     return df.merge(df_scores, on=text_col, how="left")
-
-def save_perspective_responses(responses: List[Dict], out_path: Path) -> None:
-    """
-    Save the list of dicts in JSON.
-    """
-    save_json(responses, out_path)
-
-def load_perspective_responses(path: Path) -> List[Dict]:
-    obj = load_json(path)
-    if not isinstance(obj, list):
-        raise ValueError("The Json file must be a list of objects.")
-    return obj
