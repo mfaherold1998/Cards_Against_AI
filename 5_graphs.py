@@ -2,7 +2,7 @@ print("Importing Libraries")
 
 from pathlib import Path
 from src.args_parser import get_args
-from src.utils import get_last_pointer_dir, load_last_data, PointerFile
+from src.utils import get_last_pointer_dir, load_last_data, PointerFile, ensure_outdir
 from src.plotting import plot_all, plot_all_configs
 
 print("Parsing config.json file to get parameters...")
@@ -38,14 +38,11 @@ for name, df in datasets:
     name = name.split('_')
     name = name[2]
 
-    plot_paths_1 = plot_all(df, outdir=plot_dir, model_name=name)    
-    plot_paths_2 = plot_all_configs(df, outdir=plot_dir, model_name=name)
-
+    plot_paths_1 = plot_all(df, outdir=plot_dir, classifier_name=name)    
+    
     with open(plot_dir / f"{name}_generated_plots.txt", "w", encoding="utf-8") as f:
         for p in plot_paths_1:
             f.write(str(p) + "\n")
-        for p in plot_paths_2:
-            f.write(str(p) + "\n")
-
+        
 print(f"Graph saved in {plot_dir.resolve()}...")
 print("[END]")

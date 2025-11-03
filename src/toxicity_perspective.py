@@ -4,10 +4,11 @@ import json
 import os
 import time
 import pandas as pd
+from tqdm import tqdm
 from pathlib import Path
 from typing import Iterable, List, Dict, Optional, Sequence
 
-from src.utils import load_dotenv
+from src.utils import load_dotenv, ToxicityAttributes
 
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
@@ -20,15 +21,7 @@ if not PERSPECTIVE_API_KEY:
 
 PERSPECTIVE_DISCOVERY_URL = "https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1"
 
-DEFAULT_ATTRIBUTES: Sequence[str] = (
-    "TOXICITY",
-    "SEVERE_TOXICITY",
-    "IDENTITY_ATTACK",
-    "INSULT",
-    "PROFANITY",
-    "THREAT",
-    "SEXUALLY_EXPLICIT"
-)
+DEFAULT_ATTRIBUTES = [i.value.upper() for i in ToxicityAttributes]
 
 def save_json(scores, results_dir: Path) -> None:
     with results_dir.open("w", encoding="utf-8") as f:
@@ -72,7 +65,7 @@ def analyze_texts(
     client = _build_perspective_client(PERSPECTIVE_API_KEY)
     results: List[Dict] = []
 
-    for idx, text in enumerate(texts):
+    for idx, text in enumerate(tqdm(texts, desc="Analazing elements")):
         analyze_request = {
             "comment": {"text": str(text) if text is not None else ""},
             "requestedAttributes": {attr: {} for attr in attributes},
@@ -95,7 +88,7 @@ def analyze_texts(
                 
                 # Preparing to Logging
                 prefix = (text or "")[:40].replace("\n", " ")
-                print(f"[{idx+1}] Analizing: {prefix!r}...")
+                #print(f"[{idx+1}] Analizing: {prefix!r}...")
                 break
 
             except HttpError as e:
@@ -128,7 +121,7 @@ def analyze_texts(
 
 def _scores_to_dataframe(
     responses: List[Dict],
-    attributes: Optional[Sequence[str]] = None,
+    attributes: Optional[List] = [],
     text_col: str = "original_text",
 ) -> pd.DataFrame:
     """
@@ -143,9 +136,9 @@ def _scores_to_dataframe(
             attrs = attributes or list(r["attributeScores"].keys())
             for a in attrs:
                 try:
-                    row[a] = r["attributeScores"][a]["summaryScore"]["value"]
+                    row[a.lower()] = r["attributeScores"][a]["summaryScore"]["value"]
                 except Exception:
-                    row[a] = float("nan")
+                    row[a.lower()] = float("nan")
         else:
             # No attributeScores (calling error)
             if attributes:
@@ -155,9 +148,10 @@ def _scores_to_dataframe(
 
         df = pd.DataFrame(rows)
 
-        if "TOXICITY" in df.columns:
-            df[f"tox_gt_05"] = (df["TOXICITY"] >= 0.5).astype(int)
-            df[f"tox_gt_08"] = (df["TOXICITY"] >= 0.8).astype(int)
+        TOXICITY = ToxicityAttributes.TOXICITY.value.lower()
+        if TOXICITY in df.columns:
+            df[f"{TOXICITY}_gt_05"] = (df[TOXICITY] >= 0.5).astype(int)
+            df[f"{TOXICITY}_gt_08"] = (df[TOXICITY] >= 0.8).astype(int)
 
     return df
 

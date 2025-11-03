@@ -1,6 +1,7 @@
 print("Importing Libraries")
 
 from pathlib import Path
+import csv
 from src.args_parser import get_args
 from src.toxicity_detox import add_detoxify_scores
 from src.utils import get_last_pointer_dir, load_last_data, PointerFile, ResultsName
@@ -42,6 +43,6 @@ print(f"Saving results in {RUN_DIR.resolve()}...")
 detoxify_scores_xlsx_path = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}.xlsx"
 detoxify_scores_csv_path  = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}.csv"
 df_detoxify_scores.to_excel(detoxify_scores_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
-df_detoxify_scores.to_csv(detoxify_scores_csv_path, index=False)
+df_detoxify_scores.to_csv(detoxify_scores_csv_path, index=False, quotechar='"', quoting=csv.QUOTE_ALL, encoding='utf-8')
 
 print("[END]")

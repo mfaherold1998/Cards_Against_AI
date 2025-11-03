@@ -20,6 +20,17 @@ class ResultsName(Enum):
     DETOXIFY_SCORES = "all_games_detoxify_scores"
     PERSPECTIVE_SCORES = "all_games_perspective_scores"
 
+class ToxicityAttributes(Enum):
+    """Standard names for toxicity attributes to measure."""
+    TOXICITY = "toxicity"
+    SEVERE_TOXICITY = "severe_toxicity"
+    OBSCENE = "obscene"
+    THREAT = "threat" 
+    INSULT = "insult"
+    IDENTITY_ATTACK = "identity_attack"
+    SEXUALLY_EXPLICIT = "sexually_explicit"
+    PROFANITY = "profanity"
+
 def load_env() -> None:
     
     found = find_dotenv(usecwd=True)
@@ -105,4 +116,31 @@ def load_last_data(last_dir: Path, file_name:ResultsName, file_type:Literal['xls
     
     return df
 
+def ensure_outdir(dirpath: Path | str) -> Path:
+    out = Path(dirpath)
+    out.mkdir(parents=True, exist_ok=True)
+    return out
 
+def convert_play_to_list(play_row):
+        # Convert play str "['B001','W001',...]" in a list
+        try:
+            if isinstance(play_row, str):            
+                play = play_row.replace("'", "").replace("[", "").replace("]", "")
+                play = play.split(',')
+                return "[BUILD_ERR: invalid play]" if len(play)==0 else play
+                
+            elif isinstance(play_row, list):
+                return play_row
+            
+            # others types (Nan, None...)
+            return []
+        
+        except Exception:
+            print("[ERROR: Exception happends in convert_play_to_list(). Returning None]")
+            return None
+        
+def build_play_key (play) -> str: # B1|W1,W2,W3...
+    play_key = [re.sub(r'[BW0]',"",k) for k in play]
+    prefix = play_key[0]
+    sufix = ", ".join(play_key[1:])
+    return f"{prefix}|{sufix}"

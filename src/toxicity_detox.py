@@ -4,11 +4,9 @@ import numpy as np
 import pandas as pd
 import torch
 from detoxify import Detoxify
+from src.utils import ToxicityAttributes
 
-DEFAULT_EXPECTED = [
-    "toxicity", "severe_toxicity", "obscene", "threat",
-    "insult", "identity_attack", "sexual_explicit"
-]
+DEFAULT_EXPECTED = [i.value for i in ToxicityAttributes]
 DEFAULT_ALIASES = {"sexually_explicit": "sexual_explicit"}
 
 def _get_available_labels(model: Detoxify, aliases: Dict[str, str]) -> set:
@@ -98,12 +96,11 @@ def add_detoxify_scores(
     scores = _detoxify_batch(df_temp[text_col].astype(str).tolist(), tox_model, targets, aliases, batch_size=batch_size)
 
     for k, arr in scores.items():
-        df_temp[f"{prefix}{k}"] = np.clip(arr, 0.0, 1.0)
+        df_temp[k] = np.clip(arr, 0.0, 1.0)
 
-    tox_col = f"{prefix}toxicity"
-    
-    if tox_col in df_temp.columns:
-        df_temp[f"{prefix}tox_gt_05"] = (df_temp[tox_col] >= 0.5).astype(int)
-        df_temp[f"{prefix}tox_gt_08"] = (df_temp[tox_col] >= 0.8).astype(int)
+    TOXICITY = ToxicityAttributes.TOXICITY.value
+    if TOXICITY in df_temp.columns:
+        df_temp[f"{TOXICITY}_gt_05"] = (df_temp[TOXICITY] >= 0.5).astype(int)
+        df_temp[f"{TOXICITY}_gt_08"] = (df_temp[TOXICITY] >= 0.8).astype(int)
 
     return df_temp

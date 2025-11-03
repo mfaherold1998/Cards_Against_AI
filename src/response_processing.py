@@ -1,30 +1,14 @@
 import pandas as pd
 import re
+from src.utils import convert_play_to_list
 
 pattern_id = r"(W\d{3})"
 pattern_spaces = r"__+"
 
-def _convert_play_to_list(play_row):
-        # Convert play str "['B001','W001',...]" in a list
-        try:
-            if isinstance(play_row, str):            
-                play = play_row.replace("'", "").replace("[", "").replace("]", "")
-                play = play.split(',')
-                return "[BUILD_ERR: invalid play]" if len(play)==0 else play
-                
-            elif isinstance(play_row, list):
-                return play_row
-            
-            # others types (Nan, None...)
-            return []
-        
-        except Exception:
-            print("[ERROR: Exception happends in _convert_play_to_list(). Returning None]")
-            return None
 
 def _matched_ID(row:pd.Series, cards: dict) -> bool:     
     
-    play = _convert_play_to_list(row["play"])
+    play = convert_play_to_list(row["play"])
     winners = row.get("winners")        
     if not isinstance(winners, list):
         winners = [] if pd.isna(winners) else list(winners)
@@ -94,7 +78,7 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
 
     try:
         lang = row["lang"]  
-        play = _convert_play_to_list(row["play"])
+        play = convert_play_to_list(row["play"])
         winners = row.get("winners")        
         if not isinstance(winners, list):
             winners = [] if pd.isna(winners) else list(winners)
