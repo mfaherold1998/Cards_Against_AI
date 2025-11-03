@@ -1,33 +1,38 @@
 # Cards Against AI—Evaluating Toxicity and Bias in Language Models
 
-```
-python version = 3.12.0
-```
-
-This repository contains the code developed for a thesis exploring biases and toxicity in large language models (LLMs) by simulating automated rounds of *Cards Against Humanity*. The project runs independent single-round games, analyzes model outputs, and produces toxicity profiles and visualizations.
+This repository contains the code developed for exploring biases and toxicity in large language models (LLMs) by simulating automated rounds of *Cards Against Humanity*. The project is organized into several modules, each handling a specific stage of the processing and analysis pipeline: calling Ollama models acting as players, processing and analyzing their responses, calculating toxicity measures using external classifiers, and generating visual summaries of the results.
 
 ---
 
 ## Repository Structure
 
 ```
-├── cards_dataset/              # Folder containing black and white card datasets (by language)
-│   └── EN/                     # English version
-│       ├── BLACK_cards.xlsx
-│       ├── WHITE_cards.xlsx
-│       ├── random_configurations_5.xlsx
-│       ├── random_configurations_10.xlsx
-│       ├── toxic_configurations_ID_5.xlsx
-│       └── toxic_configurations_ID_10.xlsx
+├── cards_dataset/                  # Datasets of black and white cards (organized by language)
+├── config_files/                   # Configuration JSON files for each processing stage
+├── results/                        # Output directory for experiment results and figures
+├── src/                            # Core source code (modular architecture)
+├── 0_all_process.ipynb             # Jupyter notebook illustrating the entire pipeline
+├── 1_run_llm_models.py             # Script to call Ollama models
+├── 2_process_llm_responses.py      # Script to process and clean responses
+├── 3.1_toxicity_detoxify.py        # Script to compute toxicity metrics locally
+├── 3.2_toxicity_perspective.py     # Script to compute toxicity via Perspective API
+├── 4_analysis.py                   # Aggregation and comparative analysis
+├── 5_graphs.py                     # Script to produce all final figures
 │
-├── code_script.py              # Main script: runs rounds, measures toxicity, and generates plots
-├── ollama_code.ipynb           # Illustrative notebook showing the experiment workflow
-├── config.json                 # Configuration file defining runtime parameters
-├── requirements.txt            # Python dependencies
-├── setup_cpu.sh                # Installation script for CPU environments
-├── setup_gpu.sh                # Installation script for GPU environments
-└── README.md                   # This file
+├── setup_cpu.sh                    # Installation for CPU environments
+├── setup_gpu.sh                    # Installation for GPU environments
+├── requirements.txt                # Python dependencies
+└── README.md                       # This file
 ```
+
+---
+
+## Branches
+
+The repository currently includes two main branches:
+
+* **main**: contains the initial version of the code.
+* **perspective**: the more advanced development branch, integrating the use of Google’s **Perspective API** for external toxicity analysis.
 
 ---
 
@@ -58,36 +63,56 @@ Choose the appropriate setup script depending on your hardware:
 
 This will create a virtual environment, install all dependencies from `requirements.txt`, and verify your PyTorch installation.
 
+(Remember to grant execute permissions to the .sh files).
+
 ---
 
 ## Running the Experiment
 
 ### 1. Configure parameters
 
-Edit the `config.json` file to define the experiment parameters. Example:
+Edit the configuration JSON files located in the `config_files/` directory to define the experiment parameters. Example of the main configuration:
 
 ```json
 {
-    "dataset": "test",
-    "rounds": 10,
+    "results_dir": "./results",
+    "cards_texts_dir": "./cards_dataset",
+    "dataset_size": "test",
+    "subset_rows": 2,
+    "languages": ["EN"],
+    "rounds": 2,
     "models": ["gemma3:4b"],
     "temperatures": [0.5, 0.8],
-    "pick_more_than_2": false
+    "run_to_process": "last",
+    "file_type": "xlsx",
+    "detoxify_model": "original",
+    "device": "cpu",
+    "batch_size": 64,
+    "file_names": ["detoxify_scores", "all_games_perspective_scores"]
 }
 ```
 
 **Fields:**
 
-- `dataset`: can be `test` (small subset) or `all` (full dataset)
-- `rounds`: number of repeated runs per configuration
-- `models`: list of Ollama models to evaluate
-- `temperatures`: sampling temperatures for the model
-- `PICK_more_than_2`: whether to include black cards with more than two blanks
+* `results_dir`: directory to store the experiment results.
+* `cards_texts_dir`: path to the folder containing the card text datasets.
+* `dataset_size`: can be `test` (subset) or `all` (full dataset).
+* `subset_rows`: number of sample rows used when testing configurations.
+* `languages`: list of languages used (currently `EN`).
+* `rounds`: number of repeated runs per configuration.
+* `models`: list of Ollama models to evaluate.
+* `temperatures`: list of temperature values for sampling.
+* `run_to_process`: specifies which run results to process (options: `last` or `all`).
+* `file_type`: output format (options: `xlsx` or `csv`).
+* `detoxify_model`: type of Detoxify model (`original`, `unbiased`, `multilingual`).
+* `device`: computation device (options: `cpu` or `cuda`).
+* `batch_size`: batch size used in Detoxify analysis.
+* `file_names`: output filenames for results generated by Detoxify and Perspective to graphs.
 
-### 2. Run the main script
+### 2. To run any script
 
 ```bash
-python code_script.py --config-file ./config.json
+python [name_script].py --config-file .\config_files\[config].json
 ```
 
 This will automatically:
@@ -96,13 +121,15 @@ This will automatically:
 2. Query the specified LLMs via **Ollama**.
 3. Collect model responses and extract selected card IDs.
 4. Reconstruct complete sentences.
-5. Compute toxicity metrics using **Detoxify**.
-6. Generate multiple `.png` visualizations (curves, distributions, comparisons, etc.).
+5. Compute toxicity metrics using **Detoxify and Perspective**.
+6. Perform several analyses on the data.
+7. Generate multiple `.png` visualizations (curves, distributions, comparisons, etc.).
 
 Results are saved to:
 
 ```
-./cards_dataset/EN/all_configurations_results.xlsx
+./results/runs/...(for model runs)
+./results/processing/...(for processed, analyzed results and graphs)
 ```
 
 ---
@@ -111,16 +138,16 @@ Results are saved to:
 
 The script produces the following plots automatically:
 
-- **Toxicity vs Temperature:** mean toxicity by model.
-- **Distribution per model:** violin plots showing full distributions.
-- **Rates above threshold:** percentage of sentences with toxicity ≥ 0.8.
-- **Black card triggers:** black cards that most increase toxicity.
-- **Top plays:** most toxic black–white combinations.
-- **Instability charts:** standard deviation of toxicity per play.
-- **Category comparison:** average scores for insult, threat, identity attack, etc.
-- **Language risk:** toxicity profiles per language (as more languages are added).
+* **Toxicity vs Temperature:** mean toxicity by model.
+* **Distribution per model:** violin plots showing full distributions.
+* **Rates above threshold:** percentage of sentences with toxicity ≥ 0.8.
+* **Black card triggers:** black cards that most increase toxicity.
+* **Top plays:** most toxic black–white combinations.
+* **Instability charts:** standard deviation of toxicity per play.
+* **Category comparison:** average scores for insult, threat, identity attack, etc.
+* **Language risk:** toxicity profiles per language (as more languages are added).
 
-All figures are saved as `.png` in the root directory.
+All figures are saved as `.png` in `./results/processing/plots` 
 
 ---
 
@@ -135,6 +162,9 @@ matplotlib==3.10.7
 seaborn==0.13.2
 ollama==0.6.0
 detoxify==0.5.2
+google-api-python-client==2.151.0
+google-auth==2.35.0
+python-dotenv==1.0.1
 ```
 
 **PyTorch** is also required and installed automatically via the setup scripts.
@@ -143,7 +173,7 @@ detoxify==0.5.2
 
 ## Illustrative Notebook
 
-`ollama_code.ipynb` demonstrates the full process in a clear, annotated workflow. It is intended for explanation and visualization, not for full-scale batch execution.
+`all_process.ipynb` demonstrates the full process in a clear, annotated workflow. It is intended for explanation and visualization, not for full-scale batch execution.
 
 ---
 
@@ -151,4 +181,4 @@ detoxify==0.5.2
 
 Each model plays multiple *single-round* versions of *Cards Against Humanity*. Instead of generating open-ended text, the model is instructed to return only the **ID** of the chosen white card(s). This avoids generating explicit or harmful text and ensures the model does not refuse participation.
 
-Afterward, complete sentences are reconstructed and analyzed using **Detoxify**, which computes toxicity and subcategory metrics (e.g., insult, threat, identity attack). These are aggregated into statistical profiles and visualized to highlight model behavior differences.
+Afterward, complete sentences are reconstructed and analyzed using  classifiers, which compute toxicity and subcategory metrics (e.g., insult, threat, identity attack). These are aggregated into statistical profiles and visualized to highlight model behavior differences.

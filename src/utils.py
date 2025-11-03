@@ -68,20 +68,22 @@ def demote_previous_last_runs(results_dir: Path) -> None:
             except Exception as e:
                 print(f"[WARN] It cannot be renamed: {d.name} -> {target.name}: {e}")
 
-def write_latest_pointer(results_dir: Path, target_path: Path | str, pointer_type: PointerFile) -> None:
+def write_latest_pointer(results_dir: Path, target_path: Path | str, pointer_type: str) -> None:
     """
     Write a pointer file with the absolute path of a completed process.
     """
     try:
-        pointer_file = f"{results_dir / pointer_type}.txt"
-        pointer_file.write_text(str(target_path.resolve()), encoding="utf-8")
+        pointer_filename = f"{pointer_type}.txt"
+        pointer_file = Path(f"{results_dir}/{pointer_filename}")
+        content = str(target_path.resolve())
+        pointer_file.write_text(content, encoding="utf-8")
     except Exception as e:
-        print(f"[WARN] No se pudo escribir el puntero {pointer_type}: {e}")
+        print(f"[WARN] The pointer {pointer_type} could not be written: {e}")
 
-def get_last_pointer_dir (results_dir:Path, pointer_type: PointerFile) -> Path:
+def get_last_pointer_dir (results_dir:Path, pointer_type: str) -> Path:
     
-    pointer_filename = pointer_type + ".txt"
-    last_process_file = results_dir / pointer_filename
+    pointer_filename = f"{pointer_type}.txt"
+    last_process_file = Path(f"{results_dir}/{pointer_filename}")
     if not last_process_file.exists():
         raise FileNotFoundError(f"File {last_process_file} not found.")
     

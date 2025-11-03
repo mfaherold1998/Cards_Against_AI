@@ -1,0 +1,16 @@
+{
+    "results_dir": "./results",
+    "cards_texts_dir": "./cards_dataset",
+    "dataset_size": "test",
+    "subset_rows": 2,
+    "languages": ["EN"],
+    "rounds": 2,
+    "models": ["gemma3:4b"],
+    "temperatures": [0.5, 0.8],
+    "run_to_process": "last", 
+    "file_type": "xlsx",
+    "detoxify_model": "original",
+    "device": "cpu",
+    "batch_size": 64,
+    "file_names": ["all_games_detoxify_scores","all_games_perspective_scores"]
+}

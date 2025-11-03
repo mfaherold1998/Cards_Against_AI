@@ -2,6 +2,7 @@ print("Importing Libraries")
 from pathlib import Path
 from datetime import datetime
 import json
+import csv
 
 from src.args_parser import get_args
 from src.data_loader import load_cards, load_games
@@ -56,11 +57,11 @@ df_results = run_models(
 )
 
 print(f"Saving results in {RUN_DIR.resolve()}...")
-
 xlsx_path = RUN_DIR / f"{ResultsName.LLM_RESPONSES.value}.xlsx"
 csv_path  = RUN_DIR / f"{ResultsName.LLM_RESPONSES.value}.csv"
 df_results.to_excel(xlsx_path, index=False, header=True, sheet_name="responses")
-df_results.to_csv(csv_path, index=False)
+df_results.to_csv(csv_path, index=False, quotechar='"', quoting=csv.QUOTE_ALL, encoding='utf-8')
 
+print("[END]")
 
 

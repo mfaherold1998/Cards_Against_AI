@@ -27,7 +27,7 @@ print("Adding scores to sentences...")
 device = config_params.get("device", "cpu")
 batch = config_params.get("batch", 64)
 
-df_results_detoxify_scores = add_detoxify_scores(
+df_detoxify_scores = add_detoxify_scores(
     df=df_responses, 
     text_col='sentence', 
     model=config_params.get("detoxify_model", "original"),
@@ -35,13 +35,13 @@ df_results_detoxify_scores = add_detoxify_scores(
     batch_size=batch)
 
 # Remove columns of NAN values in case some category is not present
-df_results_detoxify_scores = df_results_detoxify_scores.dropna(axis=1, how='all')
+df_detoxify_scores = df_detoxify_scores.dropna(axis=1, how='all')
 
 print(f"Saving results in {RUN_DIR.resolve()}...")
 
 detoxify_scores_xlsx_path = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}.xlsx"
 detoxify_scores_csv_path  = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}.csv"
-df_results_detoxify_scores.to_excel(detoxify_scores_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
-df_results_detoxify_scores.to_csv(detoxify_scores_csv_path, index=False)
+df_detoxify_scores.to_excel(detoxify_scores_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
+df_detoxify_scores.to_csv(detoxify_scores_csv_path, index=False)
 
 print("[END]")

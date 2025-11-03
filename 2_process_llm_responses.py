@@ -18,7 +18,7 @@ RUN_DIR = results_dir / f"processing_{date_tag}"
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 # Write a pointer to the path of the last processing
-write_latest_pointer(results_dir, RUN_DIR, PointerFile.LATEST_PROCESS)
+write_latest_pointer(results_dir, RUN_DIR, PointerFile.LATEST_PROCESS.value)
 
 print("Loading BLACK and WHITE cards text...")
 

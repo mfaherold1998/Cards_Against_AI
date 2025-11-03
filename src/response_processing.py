@@ -1,5 +1,4 @@
 import pandas as pd
-from typing import Match
 import re
 
 pattern_id = r"(W\d{3})"
@@ -40,9 +39,7 @@ def _matched_ID(row:pd.Series, cards: dict) -> bool:
         n_spaces = len(re.findall(pattern_spaces, black_text))
         n_winners = len(winners)
         return n_spaces == n_winners
-    
-    except KeyError:
-        return False
+
     except Exception:
         return False       
     

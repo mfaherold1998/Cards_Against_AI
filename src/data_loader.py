@@ -24,8 +24,7 @@ def _read_cards_safe(path: Path, file_type: Literal['xlsx', 'csv'] = 'xlsx') -> 
         df = pd.read_excel(path)
     elif file_type == 'csv':
         df = pd.read_csv(path, sep=',')
-    else:
-        raise ValueError("file_type must be 'xlsx' or 'csv'")
+   
     if not REQUIRED_CARD_COLS.issubset(df.columns):
         raise ValueError(
             f"File {path} must have the columns {sorted(REQUIRED_CARD_COLS)}, "
@@ -39,8 +38,6 @@ def _read_games_safe(path: Path, file_type: Literal['xlsx', 'csv'] = 'xlsx') -> 
         return pd.read_excel(path)
     elif file_type == 'csv':
         return pd.read_csv(path, sep=',')
-    else:
-        raise ValueError("Error: file_type must be 'xlsx' or 'csv'")
 
 def load_cards(data_dir: Path | str, 
                langs: list[str], 
