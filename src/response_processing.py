@@ -6,7 +6,7 @@ pattern_id = r"(W\d{3})"
 pattern_spaces = r"__+"
 
 
-def _matched_ID(row:pd.Series, cards: dict) -> bool:     
+def _match_ID_spaces(row:pd.Series, cards: dict) -> bool:     
     
     play = convert_play_to_list(row["play"])
     winners = row.get("winners")        
@@ -52,7 +52,7 @@ def split_responses(df:pd.DataFrame, cards: dict):
     df_temp = df_temp.drop(columns=['response'])
 
     # Split 2: Apply the row validation function (axis=1)
-    mask_matched = df_temp.apply(_matched_ID, cards=cards, axis=1)
+    mask_matched = df_temp.apply(_match_ID_spaces, cards=cards, axis=1)
     # df_mismatch: contains the rows where the count does not match (False)
     df_mismatch = df_temp[~mask_matched].copy()
 

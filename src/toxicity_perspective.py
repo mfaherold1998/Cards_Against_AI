@@ -23,17 +23,6 @@ PERSPECTIVE_DISCOVERY_URL = "https://commentanalyzer.googleapis.com/$discovery/r
 
 DEFAULT_ATTRIBUTES = [i.value.upper() for i in ToxicityAttributes]
 
-def save_json(scores, results_dir: Path) -> None:
-    with results_dir.open("w", encoding="utf-8") as f:
-        json.dump(scores, f, ensure_ascii=False, indent=2)
-
-def load_json(path: Path):
-    with path.open("r", encoding="utf-8") as f:
-        obj = json.load(f)
-    if not isinstance(obj, list):
-        raise ValueError("The Json file must be a list of objects.")
-    return obj
-
 def _build_perspective_client(api_key: str):
     """
     Create the Perspective client (static discovery).

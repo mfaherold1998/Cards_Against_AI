@@ -38,7 +38,7 @@ def load_env() -> None:
         load_dotenv(found)
         return
 
-def _smart_read_file (file_root:Path | str, file_type:str):
+def smart_read_file (file_root:Path | str, file_type:str):
 
     file_path = f"{file_root}.{file_type}"
     if file_type == 'xlsx':
@@ -50,7 +50,7 @@ def _smart_read_file (file_root:Path | str, file_type:str):
     
     return df
 
-def _unique_path(p: Path) -> Path:
+def unique_path(p: Path) -> Path:
     """If p exists, add suffixes -1, -2, ... until you find a free one."""
     if not p.exists():
         return p
@@ -73,7 +73,7 @@ def demote_previous_last_runs(results_dir: Path) -> None:
             # Remove only the first 'last_' to avoid side effects
             new_name = re.sub(r"^last_", "", d.name, count=1)  # last_run_... -> run_...
             target = d.with_name(new_name)
-            target = _unique_path(target)
+            target = unique_path(target)
             try:
                 d.rename(target)
             except Exception as e:
@@ -112,7 +112,7 @@ def load_last_data(last_dir: Path, file_name:ResultsName, file_type:Literal['xls
         raise FileNotFoundError(f"Folder {last_dir} not found.")
     
     file_root = last_dir / file_name
-    df = _smart_read_file(file_root,file_type)
+    df = smart_read_file(file_root,file_type)
     
     return df
 
