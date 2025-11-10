@@ -6,6 +6,9 @@ import torch
 from detoxify import Detoxify
 from src.utils import ToxicityAttributes
 
+from src.logging import create_logger
+logger = create_logger (log_name="main")
+
 DEFAULT_EXPECTED = [i.value for i in ToxicityAttributes]
 DEFAULT_ALIASES = {"sexually_explicit": "sexual_explicit"}
 
@@ -72,7 +75,7 @@ def add_detoxify_scores(
     df_temp = df.copy()
     
     # Check that the column with the sentences exists
-    assert text_col in df_temp.columns, f"Column '{text_col}' is missing"
+    assert text_col in df_temp.columns, logger.error(f"Column '{text_col}' is missing")
 
     # Set the Detoxify model
     if isinstance(model, Detoxify):
@@ -88,9 +91,9 @@ def add_detoxify_scores(
     available = _get_available_labels(tox_model, aliases)
     targets = [t for t in expected if t in available]    
     if not targets:
-        raise RuntimeError(
-            f"No matching labels. Available from model: {sorted(available)}; expected: {sorted(expected)}"
-        )
+        error_message = f"No matching labels. Available from model: {sorted(available)}; expected: {sorted(expected)}"
+        logger.error(error_message)
+        raise RuntimeError(error_message)
 
     # Getting scores
     scores = _detoxify_batch(df_temp[text_col].astype(str).tolist(), tox_model, targets, aliases, batch_size=batch_size)

@@ -1,21 +1,22 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple, Dict, Any
-import ast
-import re
-
+from typing import List, Optional
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.utils import ensure_outdir, convert_play_to_list, build_play_key
+from src.utils import ensure_outdir, build_play_key
+
+from src.logging import create_logger
+logger = create_logger (log_name="main")
 
 # Columns of dataframes
 CONFIG = "config"
 LANG = "lang"
 MODEL = "model"
 TEMPERATURE = "temperature"
+BLACKID = "black_id"
 PLAY = "play"
 WINNERS = "winners"
 SENTENCE = "sentence"
@@ -121,14 +122,11 @@ def plot_rates_above_threshold(df: pd.DataFrame, outdir: Path | str, classifier_
 
 def plot_black_card_triggers(df: pd.DataFrame, outdir: Path | str, classifier_name:str, top_k: int = 30) -> Optional[Path]:
     
-    if any(col not in df.columns for col in [TOXICITY, MODEL, PLAY]):
+    if any(col not in df.columns for col in [TOXICITY, MODEL, BLACKID]):
         return None
     outdir = ensure_outdir(outdir)
     
     tmp = df.copy()
-    parsed = tmp[PLAY].apply(convert_play_to_list)
-    tmp["black_id"] = parsed.apply(lambda t: t[0])
-
     top_black = (tmp.groupby("black_id")[TOXICITY]
                    .mean().sort_values(ascending=False).head(top_k).index)
 
@@ -147,15 +145,12 @@ def plot_black_card_triggers(df: pd.DataFrame, outdir: Path | str, classifier_na
 
 def plot_top_plays_heatmap(df: pd.DataFrame, outdir: Path | str, classifier_name:str, top_k: int = 30) -> Optional[Path]:
     
-    if any(col not in df.columns for col in [TOXICITY, MODEL, PLAY]):
+    if any(col not in df.columns for col in [TOXICITY, MODEL, BLACKID, WINNERS]):
         return None
     outdir = ensure_outdir(outdir)
     
     tmp = df.copy()
-    parsed = tmp[PLAY].apply(convert_play_to_list)
-    tmp["black_id"] = parsed.apply(lambda t: t[0])
-    tmp["white_ids"] = parsed.apply(lambda t: t[1:])
-    tmp["play_key"] = [ build_play_key(p) for p in parsed ]
+    tmp["play_key"] = [build_play_key(b, w) for b, w in zip(tmp[BLACKID], tmp[WINNERS])]
 
     top_keys = (tmp.groupby("play_key")[TOXICITY]
                   .mean().sort_values(ascending=False).head(top_k).index)
@@ -174,13 +169,12 @@ def plot_top_plays_heatmap(df: pd.DataFrame, outdir: Path | str, classifier_name
 
 def plot_instability(df: pd.DataFrame, outdir: Path | str, classifier_name:str, top_n: int = 10) -> List[Path]:
     
-    if any(col not in df.columns for col in [TOXICITY, MODEL, TEMPERATURE, PLAY]):
+    if any(col not in df.columns for col in [TOXICITY, MODEL, TEMPERATURE, BLACKID, WINNERS]):
         return []
     outdir = ensure_outdir(outdir)
     
     tmp = df.copy()
-    parsed = tmp[PLAY].apply(convert_play_to_list)
-    tmp["play_key"] = [ build_play_key(p) for p in parsed ]
+    tmp["play_key"] = [build_play_key(b, w) for b, w in zip(tmp[BLACKID], tmp[WINNERS])]
 
     stability = (tmp.groupby([MODEL, TEMPERATURE, "play_key"])[TOXICITY]
                    .agg(["mean", "std", "count"]).reset_index()

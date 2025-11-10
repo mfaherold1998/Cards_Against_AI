@@ -1,15 +1,18 @@
 import json
 import argparse, sys
 
+from src.logging import create_logger
+logger = create_logger (log_name="main")
+
 def load_config_file(filepath):
     try:
         with open(filepath, 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"Error: File not found in {filepath}", file=sys.stderr)
+        logger.critical(f"FATAL: Configuration file not found at {filepath}. Exiting.", exc_info=False)
         sys.exit(1)
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON in {filepath}: {e}", file=sys.stderr)
+        logger.critical(f"FATAL: Error decoding JSON in {filepath}. Error: {e}", exc_info=True)
         sys.exit(1)
 
 def get_args():

@@ -1,4 +1,4 @@
-# Cards Against AI—Evaluating Toxicity and Bias in Language Models
+# Cards Against AI: Evaluating Toxicity and Bias in Language Models
 
 This repository contains the code developed for exploring biases and toxicity in large language models (LLMs) by simulating automated rounds of *Cards Against Humanity*. The project is organized into several modules, each handling a specific stage of the processing and analysis pipeline: calling Ollama models acting as players, processing and analyzing their responses, calculating toxicity measures using external classifiers, and generating visual summaries of the results.
 
@@ -68,6 +68,16 @@ This will create a virtual environment, install all dependencies from `requireme
 ---
 
 ## Running the Experiment
+
+### 1. Calling scripts
+```
+1. python .\1_run_llm_models.py --config-file .\config_files\1_run_config.json
+2. python .\2_process_llm_responses.py --config-file .\config_files\2_process_config.json
+3.1. python .\3.1_toxicity_detoxify.py --config-files .\config_files\3.1_detoxify_config.json
+3.2. python .\3.2_toxicity_perspective.py --config-file .\config_files\3.2_perspective_config.json
+4.
+5. python .\5_graphs.py --config-file .\config_files\5_graphs_config.json 
+```
 
 ### 1. Configure parameters
 

@@ -13,11 +13,16 @@ from src.utils import load_dotenv, ToxicityAttributes
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 
+from src.logging import create_logger
+logger = create_logger (log_name="main")
+
 load_dotenv()
 
 PERSPECTIVE_API_KEY = os.getenv("PERSPECTIVE_API_KEY")
 if not PERSPECTIVE_API_KEY:
-    raise RuntimeError("PERSPECTIVE_API_KEY is not defined.")
+    error_message = "PERSPECTIVE_API_KEY is not defined."
+    logger.error(error_message)
+    raise RuntimeError(error_message)
 
 PERSPECTIVE_DISCOVERY_URL = "https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1"
 
@@ -76,7 +81,7 @@ def analyze_texts(
                 results.append(res)
                 
                 # Preparing to Logging
-                prefix = (text or "")[:40].replace("\n", " ")
+                #prefix = (text or "")[:40].replace("\n", " ")
                 #print(f"[{idx+1}] Analizing: {prefix!r}...")
                 break
 
@@ -86,12 +91,12 @@ def analyze_texts(
                 if status and int(status) in (429, 500, 502, 503, 504) and attempt < max_retries:
                     # Implemeting sleep for retraying
                     sleep_s = base_backoff * (2**attempt)
-                    print(f"HTTP {status} – retrying in {sleep_s:.1f}s (attempt {attempt+1}/{max_retries})")
+                    logger.info(f"HTTP {status} – retrying in {sleep_s:.1f}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(sleep_s)
                     attempt += 1
                     continue                
                 # Unrecoverable error or retries exhausted
-                print(f"ERROR in text #{idx+1}: {e}")
+                logger.error(f"Error in text #{idx+1}: {e}")
                 results.append({
                     "original_text": text,
                     "error": f"HttpError {status}",
@@ -99,7 +104,7 @@ def analyze_texts(
                 break
 
             except Exception as e:
-                print(f"ERROR in text #{idx+1}: {e}")
+                logger.error(f"Error in text #{idx+1}: {e}")
                 results.append({
                     "original_text": text,
                     "error": str(e),

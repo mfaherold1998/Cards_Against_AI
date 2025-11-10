@@ -3,13 +3,16 @@ from pathlib import Path
 from typing import Dict, Literal
 import pandas as pd
 
+from src.logging import create_logger
+logger = create_logger (log_name="main")
+
 GameKey = [
     "funny_configurations_5", "funny_configurations_10",
     "random_configurations_5", "random_configurations_10",
     "toxic_configurations_5", "toxic_configurations_10",
 ]
 CardsDict = Dict[str, Dict[str, str]]
-GamesDict = Dict[GameKey, pd.DataFrame]
+GamesDict = Dict[str, pd.DataFrame]
 
 REQUIRED_CARD_COLS = {"Type", "Card_Text"}
 
@@ -19,13 +22,21 @@ def _read_cards_safe(path: Path, file_type: Literal['xlsx', 'csv'] = 'xlsx') -> 
     The file type is determined by the 'file_type' parameter.
     """
     if not path.exists():
-        raise FileNotFoundError(f"File not found: {path}")
-    if file_type == 'xlsx':
-        df = pd.read_excel(path)
-    elif file_type == 'csv':
-        df = pd.read_csv(path, sep=',')
+        logger.error(f"Cards file not found: {path}")
+        raise FileNotFoundError(f"File not found: {path}") 
+    
+    try:
+        if file_type == 'xlsx':
+            df = pd.read_excel(path)
+        elif file_type == 'csv':
+            df = pd.read_csv(path, sep=',')
+    except Exception as e:
+        logger.error(f"Error reading file {path}: {e}", exc_info=False)
+        raise
    
     if not REQUIRED_CARD_COLS.issubset(df.columns):
+        missing_cols = REQUIRED_CARD_COLS - set(df.columns)
+        logger.error(f"Missing required columns in {path.name}: {missing_cols}")
         raise ValueError(
             f"File {path} must have the columns {sorted(REQUIRED_CARD_COLS)}, "
             f"instead has {sorted(df.columns)}"
@@ -33,11 +44,20 @@ def _read_cards_safe(path: Path, file_type: Literal['xlsx', 'csv'] = 'xlsx') -> 
     return df
 
 def _read_games_safe(path: Path, file_type: Literal['xlsx', 'csv'] = 'xlsx') -> pd.DataFrame:
+
+    if not path.exists():
+        logger.error(f"Game file not found: {path}")
+        raise FileNotFoundError(f"File not found: {path}")
     
-    if file_type == 'xlsx':
-        return pd.read_excel(path)
-    elif file_type == 'csv':
-        return pd.read_csv(path, sep=',')
+    try:
+        if file_type == 'xlsx':
+            return pd.read_excel(path)
+        elif file_type == 'csv':
+            return pd.read_csv(path, sep=',')
+        
+    except Exception as e:
+        logger.error(f"Error reading game file {path}: {e}", exc_info=False)
+        raise
 
 def load_cards(data_dir: Path | str, 
                langs: list[str], 
@@ -66,11 +86,13 @@ def load_cards(data_dir: Path | str,
 
             DIC_ALL_CARDS[f"B_{lang.upper()}"] = DF_BLACK.set_index("Type")["Card_Text"].to_dict()        
             DIC_ALL_CARDS[f"W_{lang.upper()}"] = DF_WHITE.set_index("Type")["Card_Text"].to_dict()
-            print(f"Cards in {lang.upper()} loaded...(file extension: {file_type})")
+            logger.info(f"Cards in {lang.upper()} loaded...(file extension: {file_type})")
         
         except Exception as e:
-            print(f"The cards could not be loaded for {lang.upper()}: {e}")
+            logger.error(f"Could not load cards for {lang.upper()} (Skipping language): {e}")
     
+    card_set = [i for i in DIC_ALL_CARDS.keys()] 
+    logger.info(f"Finished loading cards. Total loaded crads sets: {len(DIC_ALL_CARDS)} ({card_set})")
     return DIC_ALL_CARDS
 
 def load_games(
@@ -97,20 +119,29 @@ def load_games(
 
             try:
                 df = _read_games_safe(file_path, file_type)
+                if dataset == "test":
+                    df = df.iloc[:subset_rows].copy()                    
                 DICT_ALL_GAMES[dict_key] = df
-                print(f"Loaded: {dict_key} ({len(df)} rows)")
+                logger.info(f"Loaded: {dict_key} ({len(df)} rows)")
                 
             except FileNotFoundError:
-                print(f"File not found for {dict_key} at: {file_path}")
+                logger.warning(f"Game file not found for {dict_key} at: {file_path}. Skipping.")
             except Exception as e:
-                print(f"Error reading {dict_key}: {e}")       
+                logger.error(f"Error reading {dict_key}. Skipping configuration. Error: {e}")       
             
 
     # Determine the size of the dataset
-    if not DICT_ALL_GAMES or dataset == "all":
+    if not DICT_ALL_GAMES:
+        logger.warning("No game configurations were loaded.")
+        return DICT_ALL_GAMES
+    if dataset == "all":
+        logger.info("Returning all loaded game rows.")
         return DICT_ALL_GAMES
     elif dataset == "test":
-        print(f"Returning the first {subset_rows} rows of each configuration.")
-        return {k: v.iloc[:subset_rows].copy() for k, v in DICT_ALL_GAMES.items()}
+        logger.info("Returning subset of game rows.")
+        return DICT_ALL_GAMES
+    else:
+        logger.error(f"Invalid value for 'dataset': {dataset}. Must be 'all' or 'test'.")
+        raise ValueError(f"Invalid value for 'dataset': {dataset}. Must be 'all' or 'test'.")
     
-    raise ValueError(f"Invalid value for 'dataset': {dataset}. Must be 'all' or 'test'.")
+    

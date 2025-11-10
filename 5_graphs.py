@@ -1,22 +1,27 @@
-print("Importing Libraries")
+from src.logging import create_logger
+logger = create_logger (log_name="main")
+
+logger.info("Importing Libraries")
 
 from pathlib import Path
 from src.args_parser import get_args
+from src.logging import create_logger
 from src.utils import get_last_pointer_dir, load_last_data, PointerFile, ensure_outdir
-from src.plotting import plot_all, plot_all_configs
+from src.plotting import plot_all
 
-print("Parsing config.json file to get parameters...")
+logger.info("Parsing config.json file to get parameters...")
 
 config_params = get_args()
 results_dir = Path(config_params.get("results_dir", "./results"))
 
 # Get latest processing directory
 RUN_DIR = get_last_pointer_dir(results_dir, PointerFile.LATEST_PROCESS.value)
+logger.debug(f"Current process folder: {RUN_DIR}")
 plot_dir = RUN_DIR / "plots"
 file_type = config_params.get("file_type", "xlsx")
 file_names = config_params.get("file_names", [])
 
-print(f"Loading data from: {file_names}...")
+logger.info(f"Loading data from: {file_names}...")
 
 # Load all scores files (Detoxify, Perspective...)
 datasets = [] # List[pd.DataFrame()]
@@ -25,14 +30,14 @@ for name in file_names:
     res = (name,df)
     datasets.append(res)
 
-print("Creating Graphics (saving .png pictures)...")
+logger.info("Creating Graphics (saving .png pictures)...")
 
 for name, df in datasets:
 
-    print (f"Processing {name} file...")
+    logger.info(f"Generating all plots for {name} file...")
     
     if df.empty:
-        print(f"[WARN] There are no rows to plot from {name}..")
+        logger.warning(f"There are no rows to plot from {name}..")
         continue
 
     name = name.split('_')
@@ -44,5 +49,5 @@ for name, df in datasets:
         for p in plot_paths_1:
             f.write(str(p) + "\n")
         
-print(f"Graph saved in {plot_dir.resolve()}...")
-print("[END]")
+logger.info(f"Plots saved in {plot_dir.resolve()}...")
+logger.info("END")

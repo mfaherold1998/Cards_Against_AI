@@ -3,8 +3,8 @@ from typing import Literal
 import pandas as pd
 import re
 from enum import Enum
-
 from dotenv import load_dotenv, find_dotenv
+
 
 class PointerFile(Enum):
     """Standard filenames for trace pointers."""
@@ -46,7 +46,8 @@ def smart_read_file (file_root:Path | str, file_type:str):
     elif file_type == 'csv':
         df = pd.read_csv(file_path, sep=',')
     else:
-        raise ValueError("file_type must be 'xlsx' or 'csv'")
+        error_message = "file_type must be 'xlsx' or 'csv'"
+        raise ValueError(error_message)
     
     return df
 
@@ -55,7 +56,7 @@ def unique_path(p: Path) -> Path:
     if not p.exists():
         return p
     base = p.stem
-    suffix = p.suffix  # normalmente vacío para carpetas
+    suffix = p.suffix  # normally empty for directories
     i = 1
     while True:
         candidate = p.with_name(f"{base}-{i}{suffix}")
@@ -77,7 +78,7 @@ def demote_previous_last_runs(results_dir: Path) -> None:
             try:
                 d.rename(target)
             except Exception as e:
-                print(f"[WARN] It cannot be renamed: {d.name} -> {target.name}: {e}")
+                print(f"It cannot be renamed: {d.name} -> {target.name}: {e}")
 
 def write_latest_pointer(results_dir: Path, target_path: Path | str, pointer_type: str) -> None:
     """
@@ -89,19 +90,21 @@ def write_latest_pointer(results_dir: Path, target_path: Path | str, pointer_typ
         content = str(target_path.resolve())
         pointer_file.write_text(content, encoding="utf-8")
     except Exception as e:
-        print(f"[WARN] The pointer {pointer_type} could not be written: {e}")
+        print(f"The pointer {pointer_type} could not be written: {e}")
 
 def get_last_pointer_dir (results_dir:Path, pointer_type: str) -> Path:
     
     pointer_filename = f"{pointer_type}.txt"
     last_process_file = Path(f"{results_dir}/{pointer_filename}")
     if not last_process_file.exists():
-        raise FileNotFoundError(f"File {last_process_file} not found.")
+        error_message = f"File {last_process_file} not found."
+        raise FileNotFoundError(error_message)
     
     rund_dir = Path(last_process_file.read_text(encoding="utf-8").strip())
     
     if not rund_dir.exists():
-        raise FileNotFoundError(f"The last process folder does not exist: {rund_dir}")
+        error_message = f"The last process folder does not exist: {rund_dir}"
+        raise FileNotFoundError(error_message)
     
     return rund_dir
 
@@ -109,7 +112,8 @@ def load_last_data(last_dir: Path, file_name:ResultsName, file_type:Literal['xls
     """Returns the path to the last  csv or xlsx responses file to get the data."""
     
     if not last_dir.exists():
-        raise FileNotFoundError(f"Folder {last_dir} not found.")
+        error_message = f"Folder {last_dir} not found."
+        raise FileNotFoundError(error_message)
     
     file_root = last_dir / file_name
     df = smart_read_file(file_root,file_type)
@@ -122,12 +126,15 @@ def ensure_outdir(dirpath: Path | str) -> Path:
     return out
 
 def convert_play_to_list(play_row):
-        # Convert play str "['B001','W001',...]" in a list
+        # Convert play str "['W001','W002',...]" in a list
         try:
             if isinstance(play_row, str):            
                 play = play_row.replace("'", "").replace("[", "").replace("]", "")
                 play = play.split(',')
-                return "[BUILD_ERR: invalid play]" if len(play)==0 else play
+                if not play:
+                    print("BUILD_ERR: invalid play - The 'play' variable is empty.")
+                    return None
+                return play
                 
             elif isinstance(play_row, list):
                 return play_row
@@ -135,12 +142,9 @@ def convert_play_to_list(play_row):
             # others types (Nan, None...)
             return []
         
-        except Exception:
-            print("[ERROR: Exception happends in convert_play_to_list(). Returning None]")
+        except Exception as e:
+            print(f"Exception happends converting the play in a list: {e}. Returning None")
             return None
         
-def build_play_key (play) -> str: # B1|W1,W2,W3...
-    play_key = [re.sub(r'[BW0]',"",k) for k in play]
-    prefix = play_key[0]
-    sufix = ", ".join(play_key[1:])
-    return f"{prefix}|{sufix}"
+def build_play_key (black_id: str, winners: list) -> str: # B1|W1,W2,W3...
+    return f"{black_id}|{winners}"

@@ -3,6 +3,9 @@ from itertools import product
 from typing import Dict
 import pandas as pd
 
+from src.logging import create_logger
+logger = create_logger (log_name="main")
+
 def single_round(model, prompt, temperature):
 
     """Run a single Ollama chat round."""
@@ -40,15 +43,14 @@ def run_models(
     total_combos = len(games) * len(models) * len(temperatures)
     combo_count = 0
 
-    print(f"\n[START] Running {total_combos} combinations.")
-    print(f"[INFO] Each combination runs {n_rounds} rounds.\n")
+    logger.info(f"START: Running {total_combos} combinations. Each combination runs {n_rounds} rounds.")
 
     
     for (config_name, df_cfg), model, temperature in product(games.items(), models, temperatures):
 
         combo_count += 1
-        print(f"--- Processing ({combo_count}/{total_combos}) ---")
-        print(f"Config: {config_name} | Model: {model} | Temp: {temperature}")
+        logger.info(f"Processing: ({combo_count}/{total_combos})")
+        logger.info(f"Config: {config_name} | Model: {model} | Temp: {temperature}")
 
         for play in df_cfg.values:                
             lang = play[0]  
@@ -65,7 +67,7 @@ def run_models(
                 black_card_text = cards["B_"+lang.upper()][black_card_id]
 
             except KeyError as e:
-                print(f"\n[ERROR] Missing card ID {e} in cards dict for lang {lang.upper()}. Skipping play.")
+                logger.error(f"Missing card ID {e} in cards dict for lang {lang.upper()} (Play skipped).")
                 continue
 
             for i in range(n_rounds):
@@ -79,9 +81,8 @@ def run_models(
                     content = getattr(getattr(res, "message", None), "content", "")
                     
                 except Exception as e:
-                    content = f"ERROR: {type(e).__name__}: {e}"
-                    # Print errors, but do not interrupt the progress bar.
-                    print(f"\n[ERROR] during round {i+1} for {config_name}|{model}: {content}")
+                    content = f"API_ERROR: {type(e).__name__}: {e}"                    
+                    logger.error(f"Error during round {i+1} for {config_name}|{model}. {content}", exc_info=True)
                     
                 # 4. Acumular resultados
                 results.append({
@@ -89,12 +90,13 @@ def run_models(
                     "iteration": i + 1,
                     "lang": lang,
                     "model": model,                
-                    "temperature": temperature,    
-                    "play": [black_card_id] + list(white_card_ids),
+                    "temperature": temperature,
+                    "black_id": black_card_id,
+                    "play": list(white_card_ids),
                     "response": content                           
                 })
 
 
-    print(f"\n[END] All combinations completed. Total results: {len(results)} rows.")
+    logger.info(f"All combinations completed. Total results: {len(results)} rows.")
     return pd.DataFrame(results)
 

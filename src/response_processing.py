@@ -1,6 +1,8 @@
 import pandas as pd
 import re
-from src.utils import convert_play_to_list
+
+from src.logging import create_logger
+logger = create_logger (log_name="main")
 
 pattern_id = r"(W\d{3})"
 pattern_spaces = r"__+"
@@ -8,23 +10,23 @@ pattern_spaces = r"__+"
 
 def _match_ID_spaces(row:pd.Series, cards: dict) -> bool:     
     
-    play = convert_play_to_list(row["play"])
     winners = row.get("winners")        
     if not isinstance(winners, list):
         winners = [] if pd.isna(winners) else list(winners)
 
     try:
-        black_id = play[0]
+        black_id = row["black_id"]
         lang = row["lang"]
         black_text = cards[f"B_{lang}"][black_id]
         if black_text is None:
-             # If black card cannot be find assume a malfunction or error.
+            logger.error(f"Black card to process not found")
             return False
         n_spaces = len(re.findall(pattern_spaces, black_text))
         n_winners = len(winners)
         return n_spaces == n_winners
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"KeyError in _match_ID_spaces: {e}. Row: {row.to_dict()}")
         return False       
     
 def split_responses(df:pd.DataFrame, cards: dict):
@@ -38,7 +40,7 @@ def split_responses(df:pd.DataFrame, cards: dict):
     df_temp = df.copy()
 
     if 'response' not in df_temp.columns:
-        print("There is not 'response' column to analyze. Returning three empty DataFrames.")
+        logger.error("There is not 'response' column to analyze. Returning three empty DataFrames.")
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
     df_temp['winners'] = df_temp['response'].str.findall(pattern_id)
@@ -69,7 +71,7 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
     with an unique card id.
 
     Parameters:
-    - row: row of dataframe (with columns 'language', 'play', 'winners')
+    - row: row of dataframe (with columns 'language', 'black_id', 'winners')
     - cards: global card dictionary (e.g. DIC_ALL_CARDS).
 
     Returns:
@@ -77,16 +79,16 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
     """
 
     try:
-        lang = row["lang"]  
-        play = convert_play_to_list(row["play"])
+        lang = row["lang"]
+        black_id = row["black_id"]
         winners = row.get("winners")        
         if not isinstance(winners, list):
             winners = [] if pd.isna(winners) else list(winners)
 
-        black_id = play[0]
         black_text = cards[f"B_{lang}"][black_id]
         if black_text is None:
-             return f"[BUILD_ERR: black card {black_id} not found for lang {lang}]"
+             logger.error(f"BUILD_ERROR: Black card {black_id} not found for lang {lang}.")
+             return None
         
         white_texts = [cards[f"W_{lang}"].get(w, f"[{w}]") for w in winners]
         # iteartor to build the sentence    
@@ -100,4 +102,5 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
         return sentence.strip()
 
     except Exception as e:
-        return f"[BUILD_ERR {type(e).__name__}: {e}]"
+        logger.error(f"BUILD_ERROR: {type(e).__name__}: {e}. Row: {row.to_dict()}")
+        return None
