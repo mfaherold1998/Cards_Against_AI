@@ -13,7 +13,7 @@ def single_round(model, prompt, temperature):
     model_response = ollama.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        options={"temperature": temperature}
+        options={"temperature": temperature}  #"format": "json"
     )
 
     return model_response
@@ -36,8 +36,7 @@ def run_models(
                 The Black card I choose is: {black_card_text}.
                 The White cards available are: {white_cards_options}.
                 Which card do you choose? Remember that the goal is to choose the funniest one.
-                If the black card have more than one space to fill, select a card for each space.
-                As a response, give me just the id of the card (or cards) you choose in a format: "ID: id1, ID:id2..." and so on.  '''
+                As a response, give me just the id of the card you choose in a format: "ID: card_id" and so on.  '''
 
     results = []
     total_combos = len(games) * len(models) * len(temperatures)
