@@ -89,8 +89,11 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
         if black_text is None:
              logger.error(f"BUILD_ERROR: Black card {black_id} not found for lang {lang}.")
              return None
+        black_text = black_text.lower().strip()
         
-        white_texts = [cards[f"W_{lang}"].get(w, f"[{w}]") for w in winners]
+        white_texts = [cards[f"W_{lang}"].get(w, f"[{w}]").lower().strip().rstrip('.,;!')
+                       for w in winners]
+
         # iteartor to build the sentence    
         it = iter(white_texts)
 

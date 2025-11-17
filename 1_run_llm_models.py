@@ -50,7 +50,10 @@ DIC_ALL_GAMES = load_games(
     data_dir=cards_text_dir,
     langs=langs,
     dataset=config_params.get("dataset_size", "test"),    
-    subset_rows=config_params.get("subset_rows", 2))  # file_type xlsx by default
+    subset_rows=config_params.get("subset_rows", 2),
+    files_names=config_params.get("files_names", "")
+    )  # file_type xlsx by default
+
 
 logger.info("Running ollama models...")
 

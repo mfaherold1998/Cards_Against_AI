@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import json
 import os
 import time
 import pandas as pd
 from tqdm import tqdm
-from pathlib import Path
 from typing import Iterable, List, Dict, Optional, Sequence
 
 from src.utils import load_dotenv, ToxicityAttributes
@@ -56,60 +54,79 @@ def analyze_texts(
     - requestedAttributes, languages ​​(echo)
     With exponential retries for 429/5xx.
     """
+    batch_size = 60
+    wait_time = 90
+
     client = _build_perspective_client(PERSPECTIVE_API_KEY)
     results: List[Dict] = []
 
-    for idx, text in enumerate(tqdm(texts, desc="Analazing elements")):
-        analyze_request = {
-            "comment": {"text": str(text) if text is not None else ""},
-            "requestedAttributes": {attr: {} for attr in attributes},
-        }
-        if langs:
-            analyze_request["languages"] = list(langs)
+    texts_list = list(texts)
+    num_texts = len(texts_list)
 
-        attempt = 0
+    for batch_start in tqdm(range(0, num_texts, batch_size), desc="Analazing elements"):
         
-        while True:
-            try:
-                # Get the scores from Perspective per sentence
-                res = client.comments().analyze(body=analyze_request).execute()
-                # Include original text in response for traceability
-                res["original_text"] = text
-                res["requestedAttributes"] = list(attributes)
-                if langs:
-                    res["languages"] = list(langs)
-                results.append(res)
-                
-                # Preparing to Logging
-                #prefix = (text or "")[:40].replace("\n", " ")
-                #print(f"[{idx+1}] Analizing: {prefix!r}...")
-                break
+        batch_end = min(batch_start + batch_size, num_texts)
+        current_batch = texts_list[batch_start:batch_end]
 
-            except HttpError as e:
-                # Possible errors from the API
-                status = getattr(e, "status_code", None) or getattr(e.resp, "status", None)
-                if status and int(status) in (429, 500, 502, 503, 504) and attempt < max_retries:
-                    # Implemeting sleep for retraying
-                    sleep_s = base_backoff * (2**attempt)
-                    logger.info(f"HTTP {status} – retrying in {sleep_s:.1f}s (attempt {attempt+1}/{max_retries})")
-                    time.sleep(sleep_s)
-                    attempt += 1
-                    continue                
-                # Unrecoverable error or retries exhausted
-                logger.error(f"Error in text #{idx+1}: {e}")
-                results.append({
-                    "original_text": text,
-                    "error": f"HttpError {status}",
-                })
-                break
+        for text_idx_in_batch, text in enumerate(current_batch):
 
-            except Exception as e:
-                logger.error(f"Error in text #{idx+1}: {e}")
-                results.append({
-                    "original_text": text,
-                    "error": str(e),
-                })
-                break
+            global_idx = batch_start + text_idx_in_batch
+        
+            analyze_request = {
+                "comment": {"text": str(text) if text is not None else ""},
+                "requestedAttributes": {attr: {} for attr in attributes},
+            }
+            if langs:
+                analyze_request["languages"] = list(langs)
+
+            attempt = 0
+            
+            while True:
+                try:
+                    # Get the scores from Perspective per sentence
+                    res = client.comments().analyze(body=analyze_request).execute()
+                    # Include original text in response for traceability
+                    res["original_text"] = text
+                    res["requestedAttributes"] = list(attributes)
+                    if langs:
+                        res["languages"] = list(langs)
+                    results.append(res)
+                    
+                    # Preparing to Logging
+                    #prefix = (text or "")[:40].replace("\n", " ")
+                    #print(f"[{idx+1}] Analizing: {prefix!r}...")
+                    break
+
+                except HttpError as e:
+                    # Possible errors from the API
+                    status = getattr(e, "status_code", None) or getattr(e.resp, "status", None)
+                    if status and int(status) in (429, 500, 502, 503, 504) and attempt < max_retries:
+                        # Implemeting sleep for retraying
+                        sleep_s = base_backoff * (2**attempt)
+                        logger.info(f"HTTP {status} – retrying in {sleep_s:.1f}s (attempt {attempt+1}/{max_retries})")
+                        time.sleep(sleep_s)
+                        attempt += 1
+                        continue                
+                    # Unrecoverable error or retries exhausted
+                    logger.error(f"Error in text #{idx+1}: {e}")
+                    results.append({
+                        "original_text": text,
+                        "error": f"HttpError {status}",
+                    })
+                    break
+
+                except Exception as e:
+                    logger.error(f"Error in text #{global_idx+1}: {e}")
+                    results.append({
+                        "original_text": text,
+                        "error": str(e),
+                    })
+                    break
+        
+        if batch_end < num_texts:
+            logger.info(f"Batch {len(current_batch)} complete. Waiting {wait_time} seconds to avoid API limits...")
+            time.sleep(wait_time)
+
 
     return results
 
@@ -165,3 +182,4 @@ def add_perspective_scores(
 
     # Fallback: merge by text
     return df.merge(df_scores, on=text_col, how="left")
+

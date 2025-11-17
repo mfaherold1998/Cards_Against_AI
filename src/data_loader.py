@@ -7,14 +7,15 @@ from src.logging import create_logger
 logger = create_logger (log_name="main")
 
 GameKey = [
-    "funny_configurations_5", "funny_configurations_10",
-    "random_configurations_5", "random_configurations_10",
-    "toxic_configurations_5", "toxic_configurations_10",
+    "random_configurations_5", 
+    "random_configurations_10",
+    "toxic_configurations_5", 
+    "racism_configurations_5",
 ]
 CardsDict = Dict[str, Dict[str, str]]
 GamesDict = Dict[str, pd.DataFrame]
 
-REQUIRED_CARD_COLS = {"Type", "Card_Text"}
+REQUIRED_CARD_COLS = {"type", "card_text"}
 
 def _read_cards_safe(path: Path, file_type: Literal['xlsx', 'csv'] = 'xlsx') -> pd.DataFrame:
     """
@@ -84,8 +85,8 @@ def load_cards(data_dir: Path | str,
             DF_BLACK = _read_cards_safe(path_black_cards, file_type=file_type)
             DF_WHITE = _read_cards_safe(path_white_cards, file_type=file_type)
 
-            DIC_ALL_CARDS[f"B_{lang.upper()}"] = DF_BLACK.set_index("Type")["Card_Text"].to_dict()        
-            DIC_ALL_CARDS[f"W_{lang.upper()}"] = DF_WHITE.set_index("Type")["Card_Text"].to_dict()
+            DIC_ALL_CARDS[f"B_{lang.upper()}"] = DF_BLACK.set_index("type")["card_text"].to_dict()        
+            DIC_ALL_CARDS[f"W_{lang.upper()}"] = DF_WHITE.set_index("type")["card_text"].to_dict()
             logger.info(f"Cards in {lang.upper()} loaded...(file extension: {file_type})")
         
         except Exception as e:
@@ -100,7 +101,8 @@ def load_games(
     langs: list[str],
     dataset: Literal["all", "test"] = "test",
     subset_rows: int = 2,
-    file_type: Literal['xlsx', 'csv'] = 'xlsx') -> GamesDict:
+    file_type: Literal['xlsx', 'csv'] = 'xlsx',
+    files_names: list[str] = []) -> GamesDict:
 
     '''Creates the dataset with all the requested games (card combinations):\n    
     If the parameter dataset==\'all\' it returns a dictionary with all the games rows.\n
@@ -112,7 +114,7 @@ def load_games(
 
     # Read all games configurations in all requested languages
     for lang in langs:
-        for key in GameKey: 
+        for key in files_names: 
             
             file_path = data_dir / lang / f"{key}.{file_type}"
             dict_key = f"{key}_{lang.upper()}"     

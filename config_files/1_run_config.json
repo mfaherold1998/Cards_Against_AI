@@ -1,10 +1,11 @@
 {
     "results_dir": "./results",
     "cards_texts_dir": "./cards_dataset",
-    "dataset_size": "test",
-    "subset_rows": 2,
+    "dataset_size": "all",
+    "subset_rows": 5,
     "languages": ["EN"],
     "rounds": 2,
     "models": ["gemma3:4b"],
-    "temperatures": [0.5, 0.8]    
+    "temperatures": [0.5, 0.8],
+    "files_names" : ["gemini_configurations_4"]   
 }
