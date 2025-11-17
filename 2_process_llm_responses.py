@@ -7,7 +7,6 @@ from datetime import datetime
 import csv
 
 from src.args_parser import get_args
-from src.logging import create_logger
 from src.data_loader import load_cards
 from src.response_processing import split_responses, build_sentence
 from src.utils import write_latest_pointer, load_last_data, get_last_pointer_dir, PointerFile, ResultsName

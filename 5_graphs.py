@@ -5,7 +5,6 @@ logger.info("Importing Libraries")
 
 from pathlib import Path
 from src.args_parser import get_args
-from src.logging import create_logger
 from src.utils import get_last_pointer_dir, load_last_data, PointerFile, ensure_outdir
 from src.plotting import plot_all
 

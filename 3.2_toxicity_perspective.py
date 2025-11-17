@@ -6,7 +6,6 @@ logger.info("Importing Libraries")
 from pathlib import Path
 import csv
 from src.args_parser import get_args
-from src.logging import create_logger
 from src.toxicity_perspective import analyze_texts, add_perspective_scores
 from src.utils import get_last_pointer_dir, load_last_data, PointerFile, ResultsName
 
