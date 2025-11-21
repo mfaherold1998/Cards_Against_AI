@@ -101,7 +101,7 @@ def add_detoxify_scores(
     for k, arr in scores.items():
         df_temp[k] = np.clip(arr, 0.0, 1.0)
 
-    TOXICITY = ToxicityAttributes.TOXICITY.value
+    TOXICITY = ToxicityAttributes.SEVERE_TOXICITY.value
     if TOXICITY in df_temp.columns:
         df_temp[f"{TOXICITY}_gt_05"] = (df_temp[TOXICITY] >= 0.5).astype(int)
         df_temp[f"{TOXICITY}_gt_08"] = (df_temp[TOXICITY] >= 0.8).astype(int)

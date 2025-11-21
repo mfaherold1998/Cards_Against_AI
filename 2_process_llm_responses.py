@@ -8,7 +8,7 @@ import csv
 
 from src.args_parser import get_args
 from src.data_loader import load_cards
-from src.response_processing import split_responses, build_sentence
+from src.response_processing import split_responses, build_sentence, build_all_combinations
 from src.utils import write_latest_pointer, load_last_data, get_last_pointer_dir, PointerFile, ResultsName
 
 logger.info("Parsing config.json file to get parameters...")
@@ -80,7 +80,13 @@ logger.info(f"Results dataframe rows after cleaning detected: {len(df_winners_id
 
 logger.info("Building sentences...")
 
+df_temp = df_winners_id.copy()
+
 df_winners_id['sentence'] = df_winners_id.apply(build_sentence, axis=1, args=(DIC_ALL_CARDS,))
+
+logger.info("Building all posible combinations sentences...")
+
+df_all_combinations = build_all_combinations(df_temp, DIC_ALL_CARDS, build_sentence)
 
 logger.info(f"Saving results in {RUN_DIR.resolve()}...")
 
@@ -88,5 +94,8 @@ good_results_xlsx_path = RUN_DIR / f"{ResultsName.GOOD_RESPONSES.value}.xlsx"
 #good_results_csv_path  = RUN_DIR / f"{ResultsName.GOOD_RESPONSES.value}.csv"
 df_winners_id.to_excel(good_results_xlsx_path, index=False, header=True, sheet_name="good_results")
 #df_winners_id.to_csv(good_results_csv_path, index=False, quotechar='"', quoting=csv.QUOTE_ALL, encoding='utf-8')
+
+all_posible_combinations_path = RUN_DIR / f"{ResultsName.ALL_POSIBLE_COMBINATIONS.value}.xlsx"
+df_all_combinations.to_excel(all_posible_combinations_path, index=False, header=True, sheet_name="all_results")
 
 logger.info("END")

@@ -29,27 +29,47 @@ if 'sentence' not in df_responses.columns:
 
 logger.info(f"Loaded {len(df_responses)} rows.")
 
+file_to_process_name = ResultsName.ALL_POSIBLE_COMBINATIONS.value
+
+logger.info(f"Loading data: {file_to_process_name}...")
+
+df_all_combinations = load_last_data(RUN_DIR, file_to_process_name, file_type)
+if 'sentence' not in df_responses.columns:
+    raise KeyError(f"There is not 'sentence' column in the file: {list(df_responses.columns)}")
+
+logger.info(f"Loaded {len(df_all_combinations)} rows.")
+
 logger.info("Clasifying Toxicity with Detoxify (local clasifier)...")
 logger.info("Adding scores to sentences...")
 
 device = config_params.get("device", "cpu")
 batch = config_params.get("batch", 64)
 
-df_detoxify_scores = add_detoxify_scores(
+df_detoxify_scores_responses = add_detoxify_scores(
     df=df_responses, 
     text_col='sentence', 
     model=config_params.get("detoxify_model", "original"),
     device=device,
     batch_size=batch)
 
+df_detoxify_scores_combinations = add_detoxify_scores(
+    df=df_all_combinations, 
+    text_col='sentence', 
+    model=config_params.get("detoxify_model", "original"),
+    device=device,
+    batch_size=batch)
+
 # Remove columns of NAN values in case some category is not present
-df_detoxify_scores = df_detoxify_scores.dropna(axis=1, how='all')
+df_detoxify_scores_responses = df_detoxify_scores_responses.dropna(axis=1, how='all')
+df_detoxify_scores_combinations = df_detoxify_scores_combinations.dropna(axis=1, how='all')
 
 logger.info(f"Saving results in {RUN_DIR.resolve()}...")
 
 detoxify_scores_xlsx_path = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}.xlsx"
+all_combinations_xlsx_path = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}_all_combinations.xlsx"
 #detoxify_scores_csv_path  = RUN_DIR / f"{ResultsName.DETOXIFY_SCORES.value}.csv"
-df_detoxify_scores.to_excel(detoxify_scores_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
+df_detoxify_scores_responses.to_excel(detoxify_scores_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
+df_detoxify_scores_combinations.to_excel(all_combinations_xlsx_path, index=False, header=True, sheet_name="toxicity_scores")
 #df_detoxify_scores.to_csv(detoxify_scores_csv_path, index=False, quotechar='"', quoting=csv.QUOTE_ALL, encoding='utf-8')
 
 logger.info("END")

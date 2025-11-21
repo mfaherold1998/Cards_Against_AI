@@ -1,5 +1,7 @@
 import pandas as pd
 import re
+import ast
+from typing import Callable, Dict, Any
 
 from src.logging import create_logger
 logger = create_logger (log_name="main")
@@ -107,3 +109,45 @@ def build_sentence(row: pd.Series, cards: dict) -> str:
     except Exception as e:
         logger.error(f"BUILD_ERROR: {type(e).__name__}: {e}. Row: {row.to_dict()}")
         return None
+    
+def build_all_combinations(
+    df: pd.DataFrame, 
+    cards: dict, 
+    build_sentence_func: Callable = build_sentence
+) -> pd.DataFrame:
+    """
+    Expand the DataFrame to create one row for each blank card in 
+    'play' and build the resulting sentence.
+    """
+    
+    # Converting play in a list[]
+    try:
+        df['play_list'] = df['play'].apply(ast.literal_eval)
+    except (ValueError, TypeError) as e:
+        logger.error(f"Error converting play in a list: {e}")
+        return pd.DataFrame()
+    
+    # Controlling if there is already a sentence column
+    if 'sentece' in df.columns:
+        df = df.drop(columns=['sentece'])
+
+    # Expanding dataframe
+    df_expanded = df.explode('play_list').copy()
+    df_expanded['play_list'] = [[card_id] for card_id in df_expanded['play_list']]
+    
+    # Renaming columns
+    df_expanded.rename(columns={'winners':'winners_of_play', 'play_list': 'winners'}, inplace=True)
+
+    # Creating the sentences
+    df_expanded['sentence'] = df_expanded.apply(build_sentence_func, axis=1, args=(cards,))
+
+    # Renaming columns
+    df_expanded.rename(columns={'winners': 'white_id', 'winners_of_play':'winners'}, inplace=True)
+
+    # Selecting final columns
+    final_cols = [
+        'config', 'lang', 'model', 'temperature', 
+        'winners', 'play', 'black_id', 'white_id', 'sentence'
+    ]
+    
+    return df_expanded[final_cols]

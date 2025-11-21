@@ -1,5 +1,4 @@
 {
     "results_dir": "./results",
-    "file_type": "xlsx",
-    "file_names": ["all_games_detoxify_scores","all_games_perspective_scores"]
+    "file_type": "xlsx"
 }

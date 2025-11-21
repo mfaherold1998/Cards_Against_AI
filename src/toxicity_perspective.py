@@ -108,7 +108,7 @@ def analyze_texts(
                         attempt += 1
                         continue                
                     # Unrecoverable error or retries exhausted
-                    logger.error(f"Error in text #{idx+1}: {e}")
+                    logger.error(f"Error in text #{global_idx+1}: {e}")
                     results.append({
                         "original_text": text,
                         "error": f"HttpError {status}",
@@ -126,7 +126,6 @@ def analyze_texts(
         if batch_end < num_texts:
             logger.info(f"Batch {len(current_batch)} complete. Waiting {wait_time} seconds to avoid API limits...")
             time.sleep(wait_time)
-
 
     return results
 
@@ -159,7 +158,7 @@ def _scores_to_dataframe(
 
         df = pd.DataFrame(rows)
 
-        TOXICITY = ToxicityAttributes.TOXICITY.value.lower()
+        TOXICITY = ToxicityAttributes.SEVERE_TOXICITY.value.lower()
         if TOXICITY in df.columns:
             df[f"{TOXICITY}_gt_05"] = (df[TOXICITY] >= 0.5).astype(int)
             df[f"{TOXICITY}_gt_08"] = (df[TOXICITY] >= 0.8).astype(int)

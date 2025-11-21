@@ -15,10 +15,14 @@ class ResultsName(Enum):
     """Standard filenames for results files."""
     LLM_RESPONSES = "all_models_responses"
     GOOD_RESPONSES = "all_games_good_results"
+    ALL_POSIBLE_COMBINATIONS = "all_games_posible_combination"
     MISMATCH_RESPONSES = "all_games_mismatch"
     NO_ID_RESPONSES = "all_games_no_id_detected"
     DETOXIFY_SCORES = "all_games_detoxify_scores"
     PERSPECTIVE_SCORES = "all_games_perspective_scores"
+    ELECTION_FREQ = "all_games_election_frequencies"
+    ELECTION_INCONSISTENCY = "all_games_election_inconsistencies"
+    DELTA_TOX = "all_games_delta_toxicity"
 
 class ToxicityAttributes(Enum):
     """Standard names for toxicity attributes to measure."""
@@ -108,7 +112,7 @@ def get_last_pointer_dir (results_dir:Path, pointer_type: str) -> Path:
     
     return rund_dir
 
-def load_last_data(last_dir: Path, file_name:ResultsName, file_type:Literal['xlsx', 'csv'] = 'xlsx') -> Path:
+def load_last_data(last_dir: Path, file_name: ResultsName, file_type:Literal['xlsx', 'csv'] = 'xlsx') -> Path:
     """Returns the path to the last  csv or xlsx responses file to get the data."""
     
     if not last_dir.exists():
@@ -125,26 +129,5 @@ def ensure_outdir(dirpath: Path | str) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     return out
 
-def convert_play_to_list(play_row):
-        # Convert play str "['W001','W002',...]" in a list
-        try:
-            if isinstance(play_row, str):            
-                play = play_row.replace("'", "").replace("[", "").replace("]", "")
-                play = play.split(',')
-                if not play:
-                    print("BUILD_ERR: invalid play - The 'play' variable is empty.")
-                    return None
-                return play
-                
-            elif isinstance(play_row, list):
-                return play_row
-            
-            # others types (Nan, None...)
-            return []
-        
-        except Exception as e:
-            print(f"Exception happends converting the play in a list: {e}. Returning None")
-            return None
-        
 def build_play_key (black_id: str, winners: list) -> str: # B1|W1,W2,W3...
     return f"{black_id}|{winners}"

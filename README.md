@@ -75,7 +75,7 @@ This will create a virtual environment, install all dependencies from `requireme
 2. python .\2_process_llm_responses.py --config-file .\config_files\2_process_config.json
 3.1. python .\3.1_toxicity_detoxify.py --config-file .\config_files\3.1_detoxify_config.json
 3.2. python .\3.2_toxicity_perspective.py --config-file .\config_files\3.2_perspective_config.json
-4.
+4. python .\4_analysis.py --config-file .\config_files\4_analysis_config.json
 5. python .\5_graphs.py --config-file .\config_files\5_graphs_config.json 
 ```
 

@@ -28,6 +28,10 @@ INSULT = "insult"
 IDENTITY_ATTACK = "identity_attack"
 SEXUALLY_EXPLICIT = "sexually_explicit"
 PROFANITY = "profanity"
+ELECTION_FREQ = "election_freq"
+INCONSISTENCY_RATIO = "inconsistency_ratio"
+TOXICITY_DELTA = "toxicity_delta"
+SEVERE_TOXICITY_DELTA = "severe_soxicity_delta"
 
 ATTRIBUTE_COLUMNS = [TOXICITY, SEVERE_TOXICITY, OBSCENE, THREAT, INSULT, IDENTITY_ATTACK, SEXUALLY_EXPLICIT, PROFANITY]
 
@@ -327,6 +331,133 @@ def plot_config_tail_rate(df: pd.DataFrame, outdir: Path | str, classifier_name:
     plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
     return path
 
+def plot_election_frequency(df: pd.DataFrame, outdir: Path | str, classifier_name: str) -> Optional[Path]:
+    """
+    Bar chart for the frequency distribution of card selections.
+    (Document: all_games_election_frequencies)
+    """
+    if ELECTION_FREQ not in df.columns:
+        return None
+        
+    outdir = ensure_outdir(outdir)
+    plt.figure(figsize=(10, 6))
+    
+    df_plot = df[ELECTION_FREQ].round(2).value_counts().sort_index().reset_index()
+    df_plot.columns = [ELECTION_FREQ, 'count']
+    
+    sns.barplot(x=ELECTION_FREQ, y='count', data=df_plot, color='skyblue')
+    
+    plt.title(f'Frequency Distribution of Blank Card Choices ({classifier_name})')
+    plt.xlabel('Choice Frequency (election_freq, rounded)')
+    plt.ylabel('White Card Count')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.xticks(rotation=45, ha='right')
+    
+    path = outdir / f"{classifier_name}_election_frequency_distribution.png"
+    plt.tight_layout()
+    plt.savefig(path, dpi=200)
+    plt.close()
+    return path
+
+def plot_inconsistency_ratio(df: pd.DataFrame, outdir: Path | str, classifier_name: str) -> Optional[Path]:
+    """
+    Density graph for Consistency/Inconsistency per Black Card.
+    (Document: all_games_election_inconsistencies)
+    """
+    if INCONSISTENCY_RATIO not in df.columns or MODEL not in df.columns:
+        return None
+        
+    outdir = ensure_outdir(outdir)
+    plt.figure(figsize=(10, 6))
+
+    sns.kdeplot(
+        data=df, 
+        x=INCONSISTENCY_RATIO, 
+        hue=MODEL,
+        fill=True, 
+        alpha=.5, 
+        linewidth=2
+    )
+    
+    plt.title(f'Consistency of Choice by Black Card ({classifier_name})')
+    plt.xlabel('Inconsistency Ratio (0 = Consistent, 1 = Random)')
+    plt.ylabel('Density')
+    plt.xlim(0, 1)
+    
+    path = outdir / f"{classifier_name}_inconsistency_ratio_distribution.png"
+    plt.tight_layout()
+    plt.savefig(path, dpi=200)
+    plt.close()
+    return path
+
+def plot_toxicity_delta_distribution(df: pd.DataFrame, outdir: Path | str, classifier_name: str) -> Optional[Path]:
+    """
+    Histogram of the Toxicity_Delta distribution, centered at 0, segmented by model.
+    (Document: all_games_delta_toxicity)
+    """
+    if TOXICITY_DELTA not in df.columns or MODEL not in df.columns:
+        return None
+        
+    outdir = ensure_outdir(outdir)
+    plt.figure(figsize=(10, 6))
+
+    sns.histplot(
+        data=df, 
+        x=TOXICITY_DELTA, 
+        hue=MODEL, 
+        bins=50, 
+        kde=True, 
+        palette='viridis', 
+        alpha=0.6
+    )
+    
+    # Línea vertical clave en 0 para el punto de referencia del sesgo
+    plt.axvline(0, color='r', linestyle='--', linewidth=1.5, label='Delta = 0 (No Sesgo)')
+    
+    plt.title(f'Distribución del Delta de Toxicidad ({classifier_name})')
+    plt.xlabel('Delta de Toxicidad (T_candidata - T_ganadora)')
+    plt.ylabel('Frecuencia / Conteo')
+    plt.legend()
+    
+    path = outdir / f"{classifier_name}_toxicity_delta_distribution.png"
+    plt.tight_layout()
+    plt.savefig(path, dpi=200)
+    plt.close()
+    return path
+
+def plot_toxicity_delta_boxplot(df: pd.DataFrame, outdir: Path | str, classifier_name: str) -> Optional[Path]:
+    """
+    Gráfico de Caja del Delta de Toxicidad, comparando la mediana por modelo.
+    (Documento: all_games_delta_toxicity)
+    """
+    if TOXICITY_DELTA not in df.columns or MODEL not in df.columns:
+        return None
+        
+    outdir = ensure_outdir(outdir)
+    plt.figure(figsize=(10, 6))
+
+    sns.boxplot(
+        data=df, 
+        x=MODEL, 
+        y=TOXICITY_DELTA,
+        hue=MODEL,
+        palette='Set3',
+        legend=False,
+        showfliers=False 
+    )
+    
+    plt.axhline(0, color='r', linestyle='--', linewidth=1.5)
+    
+    plt.title(f'Toxicity Bias (Median Delta) by Model ({classifier_name})')
+    plt.xlabel('Model')
+    plt.ylabel('Toxicity Delta (Tox_candidate - Tox_winner)')
+    
+    path = outdir / f"{classifier_name}_toxicity_delta_boxplot.png"
+    plt.tight_layout()
+    plt.savefig(path, dpi=200)
+    plt.close()
+    return path
+
 def plot_all(df: pd.DataFrame, outdir: Path | str = "./plots", classifier_name: str ="") -> List[Path]:
     """
     Generates all possible charts with the available data.
@@ -352,3 +483,4 @@ def plot_all(df: pd.DataFrame, outdir: Path | str = "./plots", classifier_name: 
     ]
     paths.extend([p for p in maybe if p is not None])
     return paths
+
