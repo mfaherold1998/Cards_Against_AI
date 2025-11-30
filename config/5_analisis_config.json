@@ -1,0 +1,6 @@
+{
+    "analysis_dir":"./results/analysis_module",
+    "analysis_plot_dir": "./results/analysis_module/analysis_results",
+    "file_type": "xlsx",
+    "results_dir": "./results"
+}

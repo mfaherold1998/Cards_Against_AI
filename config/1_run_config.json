@@ -1,0 +1,13 @@
+{
+    "cards_dir": "./data",
+    "results_dir": "./results",
+    "languages": ["EN"],
+    "file_type":"xlsx",
+    "models": ["gemma3:4b"],
+    "temperatures": [0.5, 0.8],
+    "rounds": 2,
+    "dataset_mode": "test",
+    "test_num_rows": 2,
+    "prompt_type": "prompt_player",
+    "character_description": "A radical feminist."
+}
