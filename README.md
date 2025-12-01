@@ -1,6 +1,6 @@
 # Cards Against AI
 
-This project simulates **Cards Against Humanity (CAH)** using **Large Language Models (LLMs)**. The idea is simple but revealing: let models play the game, either by picking the funniest white card or by acting as the judge choosing the winning combination. The setup is designed to explore model behavior, biases, and tendencies toward irreverent or offensive humor.
+This project simulates several single-rounds of the game **Cards Against Humanity (CAH)** using **Large Language Models (LLMs)**. The idea is simple but revealing: let models play the game, either by picking the funniest white card or by acting as the judge choosing the winning combination. The setup is designed to explore model behavior, biases, and tendencies toward irreverent or offensive humor.
 
 The full workflow is split into five modules: simulation, sentence construction, toxicity scoring, visualization, and final analysis.
 

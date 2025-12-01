@@ -54,7 +54,8 @@ def main():
     logger.info("LOADING MODEL RESPONSES...")
 
     # 5. Loading raw responses from models
-    raw_responses_path = run_dir / DirNames.LLM_RAW_RESPONSES.value / f"{ResultsNames.LLM_RAW_RESPONSES.value}.{file_type}"
+    raw_data_dir = run_dir / DirNames.LLM_RAW_RESPONSES.value
+    raw_responses_path = raw_data_dir / f"{ResultsNames.LLM_RAW_RESPONSES.value}.{file_type}"
     df_results, errors = load_data(raw_responses_path)
 
     logger.info(f"ROWS LOADED: {len(df_results)}")
@@ -69,7 +70,7 @@ def main():
     # 7. Saving no good results
     if not df_no_id_detected.empty:
         logger.info(f"Rows without card id detected: {len(df_no_id_detected)}")
-        no_id_path = PROCESSED_DATA_DIR / f"{ResultsNames.NO_ID_RESPONSES.value}.{file_type}"
+        no_id_path = raw_data_dir / f"{ResultsNames.NO_ID_RESPONSES.value}.{file_type}"
         if file_type == "xlsx":    
             df_no_id_detected.to_excel(no_id_path, index=False, header=True, sheet_name="no_id_results")
         elif file_type == "csv":    
@@ -77,7 +78,7 @@ def main():
 
     if not df_mismatch_id_spaces.empty:
         logger.info(f"Rows where the count between ids and spaces does not match detected: {len(df_mismatch_id_spaces)}")
-        mismacht_path = PROCESSED_DATA_DIR / f"{ResultsNames.MISMATCH_RESPONSES.value}.{file_type}"
+        mismacht_path = raw_data_dir / f"{ResultsNames.MISMATCH_RESPONSES.value}.{file_type}"
         if file_type == "xlsx":    
             df_mismatch_id_spaces.to_excel(mismacht_path, index=False, header=True, sheet_name="mismatch_results")
         elif file_type == "csv":    

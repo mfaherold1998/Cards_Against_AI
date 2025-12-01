@@ -1,7 +1,7 @@
-from src.utils.logging import create_logger
-logger = create_logger (log_name="main")
+#from src.utils.logging import create_logger
+#logger = create_logger (log_name="main")
 
-logger.info("IMPORTING LIBRARIES")
+#logger.info("IMPORTING LIBRARIES")
 from pathlib import Path
 from datetime import datetime
 import json
@@ -13,7 +13,7 @@ from src.utils.utils import FilesNames, DirNames, ResultsNames
 
 def main():
     
-    logger.info("PARSING config.json FILE TO GET PARAMETERS...")
+    #logger.info("PARSING config.json FILE TO GET PARAMETERS...")
 
     # 1. Get parameters from json config
     config_params = get_args(1) #json number file 1_run_config.json
@@ -26,16 +26,17 @@ def main():
     date_tag = datetime.now().strftime("%d_%m_%Y_%H-%M-%S")
     prompt_type = config_params.get("prompt_type")
     run_id = f"run_{prompt_type}_{date_tag}"
+    print(run_id)
     RUN_DIR = results_dir / run_id
     RUN_DIR.mkdir(parents=True, exist_ok=True)
 
-    logger.debug(f"CURRENT RUN DIR (RUN_ID): {run_id}")
+    #logger.debug(f"CURRENT RUN DIR (RUN_ID): {run_id}")
 
     # 4. Save used configuration in RUN_DIR
     with open(RUN_DIR / "run_config.json", "w", encoding="utf-8") as f:
         json.dump(config_params, f, ensure_ascii=False, indent=2)
 
-    logger.info("LOADING BLACK AND WHITE CARDS TEXTS...")
+    #logger.info("LOADING BLACK AND WHITE CARDS TEXTS...")
 
     DIC_ALL_CARDS = {} # Dict{ "EN":{BLACK:pd.DataFrame, WHITE:pd.dataFrame}, "IT":{BLACK:pd.DataFrame, WHITE:pd.dataFrame}, ... }
     DIC_ALL_GAMES = {} # Dict{ "EN": {"game1":pd.DataFrame, "game2":pd.DataFrame,...}, "IT": {"game1":pd.DataFrame, "game2":pd.DataFrame,...}, ...}
@@ -58,7 +59,7 @@ def main():
 
         DIC_ALL_CARDS[lang] = {"BLACK" : df_black_card.set_index('card_id'), "WHITE" : df_white_card.set_index('card_id')} 
 
-    logger.info("LOADING GAMES CONFIGURATIONS...")
+    #logger.info("LOADING GAMES CONFIGURATIONS...")
 
     # 6. Loading games configuration data
     if prompt_type == "prompt_player":
@@ -76,7 +77,7 @@ def main():
         for game in DIC_ALL_GAMES[lang].keys():
             DIC_ALL_GAMES[lang][game] = DIC_ALL_GAMES[lang][game][:int(subset_rows)]
 
-    logger.info("RUNNING OLLAMA MODELS...")
+    #logger.info("RUNNING OLLAMA MODELS...")
 
     # 7. Running LLM models
     df_results = run_models(
@@ -90,7 +91,7 @@ def main():
         character_description=config_params.get("character_description")
     )
 
-    logger.info(f"SAVING RESULTS IN {RUN_DIR.resolve()}...")
+    #logger.info(f"SAVING RESULTS IN {RUN_DIR.resolve()}...")
 
     # 8. Saving Results in raw data
     results_dir = RUN_DIR / DirNames.LLM_RAW_RESPONSES.value
@@ -102,7 +103,7 @@ def main():
     elif file_type == "csv":    
         df_results.to_csv(results_path, index=False, encoding='utf-8')
 
-    logger.info("END")
+    #logger.info("END")
 
 
 if __name__ == "__main__":

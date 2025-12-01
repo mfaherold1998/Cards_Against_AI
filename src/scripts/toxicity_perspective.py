@@ -63,7 +63,7 @@ def analyze_texts(
     texts_list = list(texts)
     num_texts = len(texts_list)
 
-    for batch_start in tqdm(range(0, num_texts, batch_size), desc="Analazing elements"):
+    for batch_start in tqdm(range(0, num_texts, batch_size), desc="Analazing elements", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour="green", ascii=True):
         
         batch_end = min(batch_start + batch_size, num_texts)
         current_batch = texts_list[batch_start:batch_end]

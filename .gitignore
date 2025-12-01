@@ -1,4 +1,6 @@
 venv/
+venv_cpu/
+venv_gpu/
 env/
 .env
 *.secret
