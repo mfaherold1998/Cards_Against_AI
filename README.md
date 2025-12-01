@@ -1,8 +1,8 @@
 # Cards Against AI
 
-This project simulates several single-rounds of the game **Cards Against Humanity (CAH)** using **Large Language Models (LLMs)**. The idea is simple but revealing: let models play the game, either by picking the funniest white card or by acting as the judge choosing the winning combination. The setup is designed to explore model behavior, biases, and tendencies toward irreverent or offensive humor.
+This project simulates several single-rounds of the game **Cards Against Humanity (CAH)** using **Large Language Models (LLMs)**. The idea is simple: let models play the game, either by picking the funniest white card or by acting as the judge choosing the winning combination. The setup is designed to explore model behavior, biases, and tendencies toward irreverent or offensive humor.
 
-The full workflow is split into five modules: simulation, sentence construction, toxicity scoring, visualization, and final analysis.
+The full workflow is split into five modules: simulation of the game, sentence construction, toxicity scoring, visualization, and final analysis.
 
 ---
 
@@ -22,10 +22,12 @@ Throughout the process:
 The general process involves:
 
 1. Running model simulations.
-2. Constructing full sentences from black and white cards.
+2. Constructing full sentences from black and white cards (versions are built only for the winning cards and others for all the cards in the hand).
 3. Scoring toxicity using Detoxify and Perspective API.
 4. Generating visualizations.
-5. Performing a final comparative analysis.
+5. Performing a final comparative analysis between the different runs.
+
+Notes: Not all models are ready to play; some have stricter safety measures that prevent them from participating from the start.
 
 ---
 
@@ -46,56 +48,23 @@ Descriptive statistics are available in the notebook `dataset_analysis.ipynb`.
 
 Before installing, ensure you have:
 
-* **Python 3.10+**
+* **Python 3.12.0** or grather.
+* **Ollama** installed locally.
 * **Jupyter Notebook** (optional, for running `all_process.ipynb`)
+* **Perspective API Key** (is free for research.)
 
 ---
 
 ## 4. Installation and Cloning
-
-Clone the repository:
 
 ```bash
 git clone https://github.com/mfaherold1998/Cards_Against_AI.git
 cd Cards_Against_AI
 ```
 
-Run the installation script:
-
-```bash
-./setup_cpu.sh
-# or
-./setup_gpu.sh
-```
-
-Example of `setup_cpu.sh`:
-
-```bash
-#!/bin/bash
-
-VENV_NAME="venv_cpu"
-
-echo "--- 1. Creating virtual environment ($VENV_NAME) ---"
-python -m venv "$VENV_NAME"
-
-echo "--- 2. Activate ---"
-source "$VENV_NAME"/Scripts/activate
-
-echo "--- 3. Installing dependencies (requirements.txt) ---"
-pip install -r requirements.txt
-
-echo "--- 4. Installing PyTorch ---"
-pip install torch torchvision
-
-echo "--- 5. Verifying PyTorch ---"
-python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
-
-echo "--- Installation complete. ---"
-```
-
 ---
 
-## 5. Requirements File (requirements.txt)
+## 5. Dependencies (requirements.txt)
 
 Core dependencies (version‑locked for reproducibility):
 
@@ -108,12 +77,28 @@ Core dependencies (version‑locked for reproducibility):
 * `google-api-python-client==2.151.0`
 * `google-auth==2.35.0`
 * `python-dotenv==1.0.1`
+* `openpyxl==3.1.5`
 
 ---
 
 ## 6. Project Modules and Execution
 
-Each module can be run independently. Every script reads from a directory identified by `run_id`, so execution order is flexible.
+Run the script according to the device where you want to run it (remember to give execution permissions with chmod +x):
+
+```bash
+./setup_cpu.sh
+# or
+./setup_gpu.sh
+```
+
+`setup_cpu.sh` performs:
+
+* Creates a virtual environment named `venv_cpu` and activates it automatically.
+* Installs all the dependencies in requirements.txt
+* Runs module 1 (the simulation of the game with LLMs) and obtain the generated run_id
+* Propagates the run_id to the configuration files of the other modules and executes them.
+
+Note: Each module can be run independently. Every script reads from a directory identified by `run_id`, so execution order is flexible.
 
 | Step | Module               | Command                                                                            |
 |-----|-----------------------|------------------------------------------------------------------------------------|
@@ -127,18 +112,20 @@ Each module can be run independently. Every script reads from a directory identi
 
 ## 7. Detailed Module Descriptions
 
-### 7.1 `run_llm.py`
+(Configuration variables description)
+
+### `run_llm.py`
 
 Runs simulation rounds using the settings in `run_config.json`. Models act as players or judges and return only the selected card IDs. Results are saved to the run directory.
 
-### 7.2 `build_sentences.py`
+### `build_sentences.py`
 
 Loads results from Step 1 and constructs complete sentences by pairing black cards with winning white cards. Produces:
 
 * All winning combinations
 * All evaluated combinations
 
-### 7.3 `toxicity_scores.py`
+### `toxicity_scores.py`
 
 Calculates toxicity scores using two sources:
 
@@ -147,7 +134,7 @@ Calculates toxicity scores using two sources:
 
 Outputs include toxicity scores across multiple dimensions.
 
-### 7.4 `graphs.py`
+### `graphs.py`
 
 Generates plots such as:
 
@@ -157,7 +144,7 @@ Generates plots such as:
 
 Outputs are saved as PNG files.
 
-### 7.5 `analysis.py`
+### `analysis.py`
 
 Combines all data to examine:
 

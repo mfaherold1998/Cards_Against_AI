@@ -1,0 +1,12 @@
+Ho testato il codice su un Mac e questi sono i passaggi che ho seguito (ha funzionato correttamente):
+0. Sto usando Python 3.12.0
+1. Installare Ollama e scaricare i modelli da usare (ollama pull)
+2. Clona il repository e vai al branch complete_v2
+3. chmod +x setup_cpu.sh (o setup_gpu.sh)
+4. Copia la chiave API di Perspective in un file .env
+5. Modifica setup.sh (lascia commenti con la sintassi corretta per alcune istruzioni su Mac)
+6. Esegui ./setup_cpu.sh
+
+Il file di configurazione esegue l'intero programma fino al modulo 4. 
+Sono stati creati template dei file di configurazione JSON per l'automazione.
+Se si desidera eseguire ciascun modulo separatamente, è sufficiente sostituire manualmente le variabili JSON.
