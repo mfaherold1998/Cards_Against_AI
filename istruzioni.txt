@@ -9,4 +9,4 @@ Ho testato il codice su un Mac e questi sono i passaggi che ho seguito (ha funzi
 
 Il file di configurazione esegue l'intero programma fino al modulo 4. 
 Sono stati creati template dei file di configurazione JSON per l'automazione.
-Se si desidera eseguire ciascun modulo separatamente, è sufficiente sostituire manualmente le variabili JSON.
+Se si desidera eseguire ciascun modulo separatamente, è sufficiente sostituire manualmente le variabili nei JSON.

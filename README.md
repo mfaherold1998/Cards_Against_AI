@@ -112,7 +112,21 @@ Note: Each module can be run independently. Every script reads from a directory 
 
 ## 7. Detailed Module Descriptions
 
-(Configuration variables description)
+The following variables can be found in the configuration files:
+* **cards_dir** : "./data" (directory that contains the datasets in several languages)
+* **results_dir** : "./results" (directory created to store the results of the runs and analyses)
+* **languages** : ["EN"] (List of available languages, currently `EN`, `IT`, `ES`)
+* **file_type** :"xlsx" (file extension, it can be `xlsx` or `csv`)
+* **models** : ["gemma3:4b", "moondream"] (List of Ollama models to be used in the simulation)
+* **temperatures** : [0.5, 0.8] (temperatures to test)
+* **rounds** : 4 (rounds for each play, that is, a specific combination of cards)
+* **dataset_mode** : "test" (Simulation type, can be `test` or `all`)
+* **test_num_rows** : 4 (if the simulation is a `test`, the first 4 rows of the dataset are loaded.)
+* **prompt_type**: "prompt_player" (can be `prompt_player` or `prompt_judge`)
+* **character_description** : "A dark humor lover." (judge personality description)
+* **detoxify_model** : "original" (detoxify model to be used; can be `original`, `unbiased`, or `multilingual`.)
+* **device** : "cpu" (can be `cpu` or `gpu`)
+* **batch_size** : 64 (batch block size for detoxify)
 
 ### `run_llm.py`
 
