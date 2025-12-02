@@ -6,7 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from typing import Iterable, List, Dict, Optional, Sequence
 
-from src.utils.utils import load_dotenv, ToxicityAttributes
+from src.utils.utils import ToxicityAttributes
+from dotenv import load_dotenv
 
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
