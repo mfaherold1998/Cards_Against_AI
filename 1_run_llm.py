@@ -17,6 +17,11 @@ def main():
 
     # 1. Get parameters from json config
     config_params = get_args(1) #json number file 1_run_config.json
+    data_dir = config_params.get("cards_dir")
+    langs = config_params.get("languages")
+    file_type = config_params.get("file_type")
+    dataset_mode = config_params.get("dataset_mode")
+    subset_rows = config_params.get("test_num_rows")
 
     # 2. Set or create results folder path
     results_dir = Path(config_params.get("results_dir"))
@@ -41,18 +46,11 @@ def main():
     DIC_ALL_CARDS = {} # Dict{ "EN":{BLACK:pd.DataFrame, WHITE:pd.dataFrame}, "IT":{BLACK:pd.DataFrame, WHITE:pd.dataFrame}, ... }
     DIC_ALL_GAMES = {} # Dict{ "EN": {"game1":pd.DataFrame, "game2":pd.DataFrame,...}, "IT": {"game1":pd.DataFrame, "game2":pd.DataFrame,...}, ...}
 
-    data_dir = config_params.get("cards_dir")
-    langs = config_params.get("languages")
-    file_type = config_params.get("file_type")
-    dataset_mode = config_params.get("dataset_mode")
-    subset_rows = config_params.get("test_num_rows")
-
-
     # 5. Loading card texts data
     for lang in langs:
         cards_text_dir = f"{data_dir}/{lang}/{DirNames.CARDS_DIR.value}"
-        black_cards_path = f"{cards_text_dir}/{FilesNames.BLACK_CARDS.value}.{file_type}"
-        white_cards_path = f"{cards_text_dir}/{FilesNames.WHITE_CARDS.value}.{file_type}"
+        black_cards_path = f"{cards_text_dir}/{FilesNames.BLACK_CARDS.value}.{file_type}" # select deck
+        white_cards_path = f"{cards_text_dir}/{FilesNames.WHITE_CARDS.value}.{file_type}" # select deck
 
         df_black_card, errors_b = load_data(black_cards_path)
         df_white_card, errors_w = load_data(white_cards_path)

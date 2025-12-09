@@ -51,7 +51,7 @@ def plot_toxicity_vs_temperature(df: pd.DataFrame, outdir: Path | str, classifie
         se = pd.to_numeric(sub["sem"], errors='coerce').fillna(0).to_numpy()
         plt.errorbar(x, y, yerr=1.96*se, marker="o", label=str(m))
     plt.xlabel(TEMPERATURE); plt.ylabel(TOXICITY); plt.legend(); plt.title("Toxicity vs Temperature")
-    path = Path(outdir) / f"{classifier_name}_toxicity_vs_temperature.png"
+    path = Path(outdir) / f"1_{classifier_name}_toxicity_vs_temperature.png"
     plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
     return path
 
@@ -66,7 +66,7 @@ def plot_distribution_by_model(df: pd.DataFrame, outdir: Path | str, classifier_
     plt.violinplot(data, showmeans=True)
     plt.xticks(range(1, len(models)+1), models, rotation=30)
     plt.ylabel(TOXICITY); plt.title("Distribution per model")
-    path = Path(outdir) / f"{classifier_name}_distribution_by_model.png"
+    path = Path(outdir) / f"2_{classifier_name}_distribution_by_model.png"
     plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
     return path
 
@@ -88,7 +88,7 @@ def plot_temperature_curve_per_model(df: pd.DataFrame, outdir: Path | str, class
         plt.title(f"{m}: Toxicity vs Temperature")
         plt.xlabel("Temperature"); plt.ylabel("Mean toxicity")
         safe_m = str(m).replace("/", "_").replace(":", "_")
-        path = Path(outdir) / f"{classifier_name}_temperature_curve_{safe_m}.png"
+        path = Path(outdir) / f"3_{classifier_name}_temperature_curve_{safe_m}.png"
         plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
         paths.append(path)
     return paths
@@ -106,7 +106,7 @@ def plot_rates_above_threshold(df: pd.DataFrame, outdir: Path | str, classifier_
         sub = sub.sort_values(TEMPERATURE)
         plt.plot(sub[TEMPERATURE], sub["tail"], marker="o", label=str(m))
     plt.xlabel("Temperature"); plt.ylabel(f"% ≥ {thr}"); plt.legend(); plt.title("High tail by model")
-    path = Path(outdir) / f"{classifier_name}_rates_above_threshold.png"
+    path = Path(outdir) / f"4_{classifier_name}_rates_above_threshold.png"
     plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
     return path
 
@@ -125,7 +125,7 @@ def plot_black_card_triggers(df: pd.DataFrame, outdir: Path | str, classifier_na
     plt.figure(figsize=(10, 8))
     sns.heatmap(mat, cmap="viridis", cbar_kws={"label": "Mean toxicity"})
     plt.title("Top toxic black cards (mean per model)")
-    path = Path(outdir) / f"{classifier_name}_black_card_triggers.png"
+    path = Path(outdir) / f"5_{classifier_name}_black_card_triggers.png"
     plt.tight_layout(); plt.savefig(path, dpi=300, bbox_inches="tight"); plt.close()
     return path
 
@@ -145,7 +145,7 @@ def plot_top_plays_heatmap(df: pd.DataFrame, outdir: Path | str, classifier_name
     plt.figure(figsize=(10, 8))
     sns.heatmap(mat, cmap="magma", cbar_kws={"label": "Mean toxicity"})
     plt.title("Top toxic plays (black + white) — mean per model")
-    path = Path(outdir) / f"{classifier_name}_top_plays_heatmap.png"
+    path = Path(outdir) / f"6_{classifier_name}_top_plays_heatmap.png"
     plt.tight_layout(); plt.savefig(path, dpi=300, bbox_inches="tight"); plt.close()
     return path
 
@@ -169,7 +169,7 @@ def plot_instability(df: pd.DataFrame, outdir: Path | str, classifier_name:str, 
     )
     plt.title("Mean Toxicity vs. Instability (Standard Deviation)")
     plt.xlabel("Average Toxicity (tox_mean)"); plt.ylabel("Instability (tox_std)")
-    p1 = Path(outdir) / f"{classifier_name}_instability_scatter.png"
+    p1 = Path(outdir) / f"7_{classifier_name}_instability_scatter.png"
     plt.tight_layout(); plt.savefig(p1, dpi=200); plt.close()
 
     # Top-N bar
@@ -180,7 +180,7 @@ def plot_instability(df: pd.DataFrame, outdir: Path | str, classifier_name:str, 
     plt.title(f"Top {top_n} Most Unstable Combinations (High STD)")
     plt.xlabel("STD of Toxicity (tox_std)"); plt.ylabel("Play")
     plt.legend(title="Model"); plt.grid(axis="x", linestyle="--", alpha=0.7)
-    p2 = Path(outdir) / f"{classifier_name}_instability_bar.png"
+    p2 = Path(outdir) / f"7_{classifier_name}_instability_bar.png"
     plt.tight_layout(); plt.savefig(p2, dpi=200); plt.close()
 
     return [p1, p2]
@@ -193,7 +193,7 @@ def plot_category_comparison(df: pd.DataFrame, outdir: Path | str, classifier_na
 
     ax = agg.plot(kind="bar")
     plt.ylabel("Average per attribute"); plt.title("Profile of attributes per model"); plt.xticks(rotation=30)
-    path = Path(outdir) / f"{classifier_name}_category_comparison.png"
+    path = Path(outdir) / f"8_{classifier_name}_category_comparison.png"
     plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
     return path
 
@@ -214,7 +214,7 @@ def plot_language_risk(df: pd.DataFrame, outdir: Path | str, classifier_name:str
         ax = out[["mean", "p50", "p90", "p95"]].plot(kind="bar")
         plt.title(f"Toxicity profile ({L}) per model")
         plt.ylabel("Score"); plt.xlabel("Model"); plt.xticks(rotation=30)
-        path = Path(outdir) / f"{classifier_name}_language_risk_{L}.png"
+        path = Path(outdir) / f"9_{classifier_name}_language_risk_{L}.png"
         plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
         paths.append(path)
     return paths
@@ -237,7 +237,7 @@ def plot_config_heatmap(df: pd.DataFrame, outdir: Path | str, classifier_name:st
     plt.figure(figsize=(10, max(6, 0.5*len(mat.index))))
     sns.heatmap(mat, cmap="viridis", cbar_kws={"label": "Mean toxicity"})
     plt.title("Mean toxicity by configuration × model")
-    path = Path(outdir) / f"{classifier_name}_config_heatmap_mean_toxicity.png"
+    path = Path(outdir) / f"10_{classifier_name}_config_heatmap_mean_toxicity.png"
     plt.tight_layout(); plt.savefig(path, dpi=300, bbox_inches="tight"); plt.close()
     return path
 
@@ -257,7 +257,7 @@ def plot_config_distribution(df: pd.DataFrame, outdir: Path | str, classifier_na
         sns.violinplot(data=df, x=TOXICITY, y=CLEAN_CONFIG,
                        cut=0, inner="quartile", density_norm="width")
         title = "Toxicity distribution by configuration (all models)"
-        fname = f"{classifier_name}_config_distribution.png"
+        fname = f"11_{classifier_name}_config_distribution_model_{by_model}.png"
 
     plt.title(title); plt.xlabel(TOXICITY); plt.ylabel("configuration")
     path = Path(outdir) / fname
@@ -281,7 +281,7 @@ def plot_config_tail_rate(df: pd.DataFrame, outdir: Path | str, classifier_name:
     sns.barplot(data=rate, x=CLEAN_CONFIG, y="tail", hue=MODEL)
     plt.ylabel(f"% ≥ {thr}"); plt.xlabel("configuration"); plt.title("High-toxicity rate by configuration")
     plt.xticks(rotation=30, ha="right")
-    path = Path(outdir) / f"{classifier_name}_config_tail_rate.png"
+    path = Path(outdir) / f"12_{classifier_name}_config_tail_rate.png"
     plt.tight_layout(); plt.savefig(path, dpi=200); plt.close()
     return path
 

@@ -44,35 +44,6 @@ def calculate_models_inconsistencies(df: pd.DataFrame, key_cols: list = ['config
     
     return df_consistency
 
-def inconsistencies_plot(df:pd.DataFrame, file_name: str, plots_dir: str):
-    df['game_tag'] = df['config'].astype(str) + " / " + df['black_id']
-
-    plt.figure(figsize=(14, 8))
-    
-    # We chose a bar plot because the TEM is a category-based metric.
-    # Color can differentiate the model if there are several.
-    sns.barplot(
-        x='MER', 
-        y='game_tag', 
-        hue='model',
-        data=df, 
-        palette='viridis',
-        legend=False
-    )
-    
-    # Add MER values to the bars
-    for index, row in df.iterrows():
-        plt.text(row['MER'] + 0.01, index, f"{row['MER']:.2f}", color='black', ha="left", va="center")
-
-    plt.xlabel("Majority Election Rate (MER)")
-    plt.ylabel("Starting Configuration (Personality / Black Card)")
-    plt.title("LLM Consistency in Choosing Winning Cards by Configuration")
-    plt.xlim(0, 1.05)
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.savefig(f'{plots_dir}/{file_name}_inconsistencies.png', dpi=300, bbox_inches='tight')
-    plt.close()
-
 def calculate_success_rate(df: pd.DataFrame) -> pd.DataFrame:
     '''
     Calculate the Observed Success Rate (wins / appearances) for each blank using only the winners file.
@@ -109,31 +80,9 @@ def calculate_success_rate(df: pd.DataFrame) -> pd.DataFrame:
     df_results['appearances'] = df_results['appearances'].astype(int)
 
     return df_results
-    
-def success_rate_plot(df:pd.DataFrame, file_name: str, plots_dir: str):
-    top = 5
-    df_top = df.head(top).sort_values(by='Success_Rate', ascending=False)
-
-    plt.figure(figsize=(12, 8))
-    sns.barplot(
-    x='Success_Rate', 
-    y='white_id',
-    hue= 'white_id',
-    data=df_top, 
-    palette='magma',
-    legend=False
-    )
-
-    plt.xlabel("Observed Success Rate (Wins / Appearances)")
-    plt.ylabel("White Card ID")
-    plt.title(f"Success Rate of the {top} Most Favored White Cards by the LLM")
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.savefig(f'{plots_dir}/{file_name}_success_rate.png', dpi=300, bbox_inches='tight')
-    plt.close()
 
 # For combinations files
-def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'lang', 'model', 'temperature', 'black_id']) -> pd.DataFrame :
+def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'lang', 'model', 'temperature', 'black_id']) -> Dict[str, pd.Series]:
     '''
     Determine the toxicity of the winning card compared to the toxicity of the other options.
     '''
@@ -143,7 +92,7 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
     # 1. Preparing the data
     # Convert winners and play in a list
     df_temp['play'] = df_temp['play'].apply(ast.literal_eval)
-    df_temp['winners'] = df_temp['winners'].apply(ast.literal_eval)    
+    df_temp['winners'] = df_temp['winners'].apply(ast.literal_eval)
     df_temp['white_id'] = df_temp['white_id'].apply(ast.literal_eval)
     
     df_temp['winner_id'] = df_temp['winners'].apply(lambda x: x[0].strip() if x else None)
@@ -156,20 +105,23 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
     df_temp['toxicity'] = pd.to_numeric(df_temp['toxicity'], errors='coerce')
     df_temp['severe_toxicity'] = pd.to_numeric(df_temp['severe_toxicity'], errors='coerce')
 
-    # Remove rows with missing values ​​in the key columns
+    # Remove rows with missing values ​​in the score or config columns
     df_temp.dropna(subset=['toxicity', 'severe_toxicity', 'config'], inplace=True)
 
     # 2. Analizing toxicity column
     # Grouping using the 5 key columns
     results_toxicity = df_temp.groupby(key_cols).apply(lambda x: {
-        'winner_score': x[x['status'] == 'Winner']['toxicity'].iloc[0], 
+        # ** CORRECCIÓN: Comprobación de que la Serie no esté vacía antes de llamar a iloc[0] **
+        'winner_score': x[x['status'] == 'Winner']['toxicity'].iloc[0] if not x[x['status'] == 'Winner'].empty else np.nan, 
         'max_score': x['toxicity'].max(),
         'min_score': x['toxicity'].min()
     }, include_groups=False).apply(pd.Series)
 
-    # Determine the pattern: More Toxic, Less Toxic, or Intermediate
+    # Eliminamos las filas donde no pudimos obtener la puntuación del ganador (datos inconsistentes)
+    results_toxicity.dropna(subset=['winner_score'], inplace=True)
+
+    # Determine the pattern: Most Toxic, Least Toxic, or Intermediate
     results_toxicity['pattern_toxicity'] = 'Intermediate'
-    # Note: The comparison with 'max' must be strict to ensure that it is the HIGHEST.
     results_toxicity.loc[results_toxicity['winner_score'] == results_toxicity['max_score'], 'pattern_toxicity'] = 'Most Toxic'
     results_toxicity.loc[results_toxicity['winner_score'] == results_toxicity['min_score'], 'pattern_toxicity'] = 'Least Toxic'
 
@@ -179,10 +131,14 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
     # 3. Analizing severe_toxicity column
     # Grouping using the 5 key columns
     results_severe_toxicity = df_temp.groupby(key_cols).apply(lambda x: {
-        'winner_score': x[x['status'] == 'Winner']['severe_toxicity'].iloc[0],
+        # ** CORRECCIÓN: Comprobación de que la Serie no esté vacía antes de llamar a iloc[0] **
+        'winner_score': x[x['status'] == 'Winner']['severe_toxicity'].iloc[0] if not x[x['status'] == 'Winner'].empty else np.nan,
         'max_score': x['severe_toxicity'].max(),
         'min_score': x['severe_toxicity'].min()
     }, include_groups=False).apply(pd.Series)
+
+    # Eliminamos las filas donde no pudimos obtener la puntuación del ganador (datos inconsistentes)
+    results_severe_toxicity.dropna(subset=['winner_score'], inplace=True)
 
     # Determine the pattern: More Toxic, Less Toxic, or Intermediate
     results_severe_toxicity['pattern_severe_toxicity'] = 'Intermediate'
@@ -193,37 +149,6 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
     pattern_counts_severe_toxicity = results_severe_toxicity['pattern_severe_toxicity'].value_counts(normalize=True).mul(100).round(2)
 
     return pattern_counts_toxicity, pattern_counts_severe_toxicity
-
-def overall_toxicity_plot(pattern_counts_toxicity:pd.DataFrame, pattern_counts_severe_toxicity:pd.DataFrame, file_name: str, plots_dir: str):
-
-    # 1. Plot 1: General Toxicity election patterns
-    plt.figure(figsize=(8, 6))
-    bars1 = plt.bar(pattern_counts_toxicity.index, pattern_counts_toxicity.values, color=['#ff6347', '#4682b4', '#3cb371'])
-    plt.title('LLM Selection Pattern: General Toxicity', fontsize=14)
-    plt.xlabel('Selection Pattern', fontsize=12)
-    plt.ylabel('Percentage of Items (%)', fontsize=12)
-    plt.ylim(0, 100)
-    for bar in bars1:
-        yval = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2, yval + 1, f'{yval:.2f}%', ha='center', va='bottom')
-    plt.tight_layout()
-    plt.savefig(f'{plots_dir}/{file_name}_general_tox_pattern.png')
-    plt.close()
-
-    # 2. Plot 2: Severe Toxicity election patterns
-    plt.figure(figsize=(8, 6))
-    bars2 = plt.bar(pattern_counts_severe_toxicity.index, pattern_counts_severe_toxicity.values, color=['#ff4500', '#1e90ff', '#228b22'])
-    plt.title('LLM Selection Pattern: Severe Toxicity', fontsize=14)
-    plt.xlabel('Selection Pattern', fontsize=12)
-    plt.ylabel('Percentage of Items (%)', fontsize=12)
-    plt.ylim(0, 100)
-    # Añadir etiquetas de porcentaje
-    for bar in bars2:
-        yval = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2, yval + 1, f'{yval:.2f}%', ha='center', va='bottom')
-    plt.tight_layout()
-    plt.savefig(f'{plots_dir}/{file_name}_severe_tox_pattern.png')
-    plt.close()
 
 #----- Judge Description pattern analysis ----------
 
@@ -290,47 +215,3 @@ def judge_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], re
     df_final_comparison = df_final_comparison.sort_values(by='mean_toxicity', ascending=False)
     
     return df_final_comparison
-
-def judge_toxicity_comparison_plot(df: pd.DataFrame, plots_dir: str, file_name: str = "judge_comparison_mean_toxicity.png"):
-    """
-    Generate a bar chart comparing the Mean Toxicity and the Mean Severe Toxicity grouped by the judge's description.
-    """
-    
-    df_plot = df[['judge_description', 'mean_toxicity', 'mean_severe_toxicity']].copy()
-    
-    df_melted = df_plot.melt(
-        id_vars='judge_description', 
-        value_vars=['mean_toxicity', 'mean_severe_toxicity'],
-        var_name='tox_type', 
-        value_name='mean_score'
-    )
-    
-    sns.set_style("whitegrid")
-    plt.figure(figsize=(12, 6))
-
-    ax = sns.barplot(
-        x='judge_description',
-        y='mean_score',
-        hue='tox_type',
-        data=df_melted,
-        palette='viridis',
-        legend=False
-    )
-    
-    plt.title('Comparison of Average Toxicity of LLM by Judge Description', fontsize=16)
-    plt.xlabel('Judge Description', fontsize=12)
-    plt.ylabel('Mean Toxicity Score', fontsize=12)
-    plt.xticks(rotation=45, ha='right')
-    plt.legend(title='Score Type', loc='upper right')
-
-    for p in ax.patches:
-        ax.annotate(format(p.get_height(), '.3f'), 
-                   (p.get_x() + p.get_width() / 2., p.get_height()), 
-                   ha = 'center', va = 'center', 
-                   xytext = (0, 9), 
-                   textcoords = 'offset points')
-
-    plt.tight_layout()
-    plt.savefig(f'{plots_dir}/{file_name}')
-    plt.close()
-

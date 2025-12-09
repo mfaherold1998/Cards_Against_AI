@@ -2,25 +2,25 @@
 
 VENV_NAME="venv_cpu"
 
-# 1. Creating Virtual Enviroment
-echo "--- Creating virtual enviroment ($VENV_NAME) ---"
-python -m venv "$VENV_NAME"
+# # 1. Creating Virtual Enviroment
+# echo "--- Creating virtual enviroment ($VENV_NAME) ---"
+# python -m venv "$VENV_NAME"
 
-echo "--- Activate ---"
+echo "--- Activate Virtual Enviroment---"
 # For MAC: "$VENV_NAME"/bin/activate
 source "$VENV_NAME"/Scripts/activate  
 
-# 2. installing requirements.txt
-echo "--- Installing dependencies (requirements.txt) ---"
-pip install -r requirements.txt
+# # 2. installing requirements.txt
+# echo "--- Installing dependencies (requirements.txt) ---"
+# pip install -r requirements.txt
 
-echo "--- Installing PyTorch ---"
-pip install torch torchvision
+# echo "--- Installing PyTorch ---"
+# pip install torch torchvision
 
-echo "--- Verifying PyTorch ---"
-python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
+# echo "--- Verifying PyTorch ---"
+# python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
 
-echo "--- Installation complete. ---"
+# echo "--- Installation complete. ---"
 
 echo "--- Starting the process ---"
 

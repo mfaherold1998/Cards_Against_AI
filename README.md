@@ -110,7 +110,9 @@ Note: Each module can be run independently. Every script reads from a directory 
 
 ---
 
-## 7. Detailed Module Descriptions
+## 7. Project structure description
+
+## 8. Detailed Module Descriptions
 
 The following variables can be found in the configuration files:
 * **cards_dir** : "./data" (directory that contains the datasets in several languages)
@@ -158,6 +160,8 @@ Generates plots such as:
 
 Outputs are saved as PNG files.
 
+Notes: A detailed description of the graphics can be found in the notebook `all_process.ipynb`.
+
 ### `analysis.py`
 
 Combines all data to examine:
@@ -172,7 +176,7 @@ Produces both visual and numerical summaries.
 
 ---
 
-## 8. Considerations and Future Work
+## 9. Considerations and Future Work
 
 ### Current Considerations
 

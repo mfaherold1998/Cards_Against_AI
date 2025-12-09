@@ -60,18 +60,12 @@ def main():
     for name, df in players_files_dict['winners'].items():        
         inconsistencies_players[name] = calculate_models_inconsistencies(df)
         success_rate_players[name] = calculate_success_rate(df)
-    for name, df in inconsistencies_players.items():
-            inconsistencies_plot(df,name,analysis_plot_dir)
-    for name, df in success_rate_players.items():
-            success_rate_plot(df,name,analysis_plot_dir)
-
+    
     # Combination files
     overall_toxicity_players ={}
     for name, df in players_files_dict['combinations'].items():
         overall_toxicity_players[name] = calculate_overall_toxicity(df)
-    for name, dfs in overall_toxicity_players.items():
-        overall_toxicity_plot(dfs[0], dfs[1], name, analysis_plot_dir)    
-
+    
     # 5. Analyzing judges files
     
     # Winners files
@@ -80,24 +74,17 @@ def main():
     for name, df in judges_files_dict['winners'].items():
         inconsistencies_judges[name] = calculate_models_inconsistencies(df)
         success_rate_judges[name] = calculate_success_rate(df)
-    for name, df in inconsistencies_judges.items():
-            inconsistencies_plot(df,name,analysis_plot_dir)
-    for name, df in success_rate_judges.items():
-            success_rate_plot(df,name,analysis_plot_dir)
-
+    
     # Combination files
     overall_toxicity_judges ={}
     for name, df in judges_files_dict['combinations'].items():
         overall_toxicity_judges[name] = calculate_overall_toxicity(df)
-    for name, dfs in overall_toxicity_judges.items():
-        overall_toxicity_plot(dfs[0], dfs[1], name, analysis_plot_dir)
+    
 
     # 6. Judge descriptions Comparisons
     df_judge_description_tox_players = judge_description_comparison_mean_toxicity(players_files_dict['winners'], results_dir)
     df_judge_description_tox_judges = judge_description_comparison_mean_toxicity(judges_files_dict['winners'], results_dir)
-    judge_toxicity_comparison_plot(df_judge_description_tox_players, analysis_plot_dir)
-    judge_toxicity_comparison_plot(df_judge_description_tox_judges, analysis_plot_dir)
-
+    
     logger.info("END")
 
 

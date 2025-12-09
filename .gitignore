@@ -7,3 +7,5 @@ env/
 results/
 logs/
 __pycache__/
+decks/
+temp.ipynb
