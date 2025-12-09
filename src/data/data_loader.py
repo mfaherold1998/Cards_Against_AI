@@ -78,19 +78,19 @@ def load_data(file_path: str|Path) -> Tuple[pd.DataFrame, List[str]]:
         - determine file type for correct data loading: ['xlsx', 'csv'],
         - determine dataset type for correct schema validation: ['cards', 'games', 'config']
     '''
-    # 1. Convertir el str en Path
+    # 1. Convert the str to a Path
     path = Path(file_path)
 
-    # 2. Determinar el esquema que corresponde al tipo de dato
+    # 2. Determine the schema that corresponds to the data type
     schema = determine_data_schema(path)
 
-    # 3. Leer los datos en modo seguro
+    # 3. Read the data in safe mode
     df_data = read_safe(path)
 
-    # 4. Validar que las columnas del df son correctas segun su esquema
+    # 4. Validate that the columns in the data field are correct according to its schema
     results_dict = file_validator(df_data, schema)
 
-    # 5. Retornar los resultados
+    # 5. Return the results
     return results_dict["data"], results_dict["errors"]
     
     
