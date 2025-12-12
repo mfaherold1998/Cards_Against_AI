@@ -1,8 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import numpy as np
-from io import BytesIO
 from src.scripts.plotly_express_plots import *
 
 # Constants
@@ -68,6 +65,19 @@ def plot_temperature_curve_per_model_px(df: pd.DataFrame):
     
     return plot_toxicity_vs_temperature_shaded(df)
 
+def plot_rates_above_threshold_px(df: pd.DataFrame, thr:float = 0.5, column:str = 'toxicity'):
+    
+    st.subheader(f"📊Percentage of LLM responses that obtained a toxicity score higher than a threshold")
+    
+    return plot_rates_above_threshold(df, thr, column)
+
+def plot_black_card_triggers_px(df: pd.DataFrame, top_k:int =10, column:str = 'toxicity'):
+    
+    st.subheader(f"📊Top cards that have triggered the most toxicity in each model")
+    
+    return plot_black_card_triggers(df, top_k, column)
+
+
 # Streamlit app logic
 def main():
     
@@ -95,26 +105,117 @@ def main():
     # Displays uploaded data for verification (optional)
     if st.checkbox("Show loaded data"):
         st.dataframe(df.head())
+
+    # ------------------------------
+
+    # --- Dynamic Chart Selector ---
     
     st.sidebar.header("Graphics Options")
-    
-    # --- Dynamic Chart Selector ---
     
     # Dictionary that maps names to Plotly functions (ADD PLOTS HERE!!)
     chart_options = {
         "Mean Toxicity vs Temperature with bar errors": plot_toxicity_vs_temperature_px,
         "Toxicity Distribution per model": plot_distribution_by_model_px,
-        "Mean Toxicity vs Temperature with shaded area": plot_temperature_curve_per_model_px
+        "Mean Toxicity vs Temperature with shaded area": plot_temperature_curve_per_model_px,
+        "High Tail of Toxicity": plot_rates_above_threshold_px,
+        "Top 10 toxic black cards": plot_black_card_triggers_px
     }
 
     selected_chart_name = st.sidebar.selectbox(
         "1. Select the plot:",
         list(chart_options.keys())
     )
+
+    st.sidebar.markdown("---")
+
+    # ------------------------------
+
+    # --- Top 10 black cards seccion ---
     
-    # Get the corresponding Plotly function
+    DEFAULT_TOP = 10
+    DEFAULT_TOP_COL = 'toxicity'
+    top = DEFAULT_TOP
+    top_column = DEFAULT_TOP_COL
+
+    if selected_chart_name == "Top 10 toxic black cards":
+
+        if 'high_tail_reset_key' not in st.session_state:
+            st.session_state['high_tail_reset_key'] = 0
+
+        reset_key = st.session_state['high_tail_reset_key']
+
+        top = st.sidebar.slider(
+            "2. Select the top cards",
+            min_value=5,
+            max_value=30,
+            value=10,
+            step=5,
+            key=f"thr_slider_{reset_key}",
+            help="Set the number of toxic cards to display at the top."
+        )
+
+        top_column = st.sidebar.selectbox(
+            "3. Select Score Column",
+            options=ATTRIBUTE_COLUMNS, 
+            index=ATTRIBUTE_COLUMNS.index('toxicity'),
+            key=f"score_col_select_{reset_key}",
+            help="Selects the column used to calculate the mean and the rate above threshold."
+        )
+
+        if st.sidebar.button("Reset Parameters", key="reset_button"):
+            st.session_state['high_tail_reset_key'] += 1
+            st.rerun()
+
+    #-----------------------------------
+
+    # --- High Tail plot section ---
+    
+    DEFAULT_THR = 0.5
+    DEFAULT_THR_COL = 'toxicity'
+    thr = DEFAULT_THR
+    thr_column = DEFAULT_THR_COL
+    
+    if selected_chart_name == "High Tail of Toxicity":
+
+        if 'high_tail_reset_key' not in st.session_state:
+            st.session_state['high_tail_reset_key'] = 0
+
+        reset_key = st.session_state['high_tail_reset_key']
+
+        thr = st.sidebar.slider(
+            "2. Select Toxicity Threshold (thr)",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.5,
+            step=0.05,
+            key=f"thr_slider_{reset_key}",
+            help="Sets the threshold for the '% >= thr' calculation in the plot."
+        )
+
+        thr_column = st.sidebar.selectbox(
+            "3. Select Score Column",
+            options=ATTRIBUTE_COLUMNS, 
+            index=ATTRIBUTE_COLUMNS.index('toxicity'),
+            key=f"score_col_select_{reset_key}",
+            help="Selects the column used to calculate the mean and the rate above threshold."
+        )
+
+        if st.sidebar.button("Reset Parameters", key="reset_button"):
+            st.session_state['high_tail_reset_key'] += 1
+            st.rerun()
+    
+    # ---------------------------------
+    
+    # --- Get the corresponding Plotly function ---
     selected_chart_func = chart_options[selected_chart_name]
-    fig = selected_chart_func(df) 
+    
+    if selected_chart_name == "High Tail of Toxicity":
+        fig = selected_chart_func(df, thr=thr, column=thr_column)
+    elif selected_chart_name == "Top 10 toxic black cards":
+        fig = selected_chart_func(df, top, top_column) 
+    else:
+        fig = selected_chart_func(df) 
+    
     st.plotly_chart(fig, use_container_width=True)
     
 

@@ -1,7 +1,5 @@
 import plotly.express as px
 import pandas as pd
-from pathlib import Path
-from typing import List
 import numpy as np
 import plotly.graph_objects as go
 
@@ -174,5 +172,79 @@ def plot_distribution_by_model (df:pd.DataFrame):
         selector=dict(type='violin') 
     )
 
+    return fig
+
+def plot_rates_above_threshold (df:pd.DataFrame, thr:float = 0.5, column:str = 'toxicity'):
+    
+    tmp = df.copy()
+    tmp["tail"] = (tmp[column] >= thr).astype(int) 
+
+    # Percentage of toxicity above the threshold.
+    rate = (tmp.groupby(['model', 'temperature'])["tail"]
+              .mean().mul(100).reset_index())
+    
+    fig = px.line(
+        rate,
+        x='temperature', 
+        y="tail", 
+        color='model', 
+        markers=True,
+        title="High Tail by Model",
+        labels={
+            "tail": f"% of Toxicity ≥ {thr}",
+            'temperature': "Temperature",
+            'model': "Model"
+        },
+        hover_data={
+            'model': False,
+            'temperature': True,
+            "tail": ":.2f"
+        }
+    )
+    
+    fig.update_xaxes(
+        dtick=0.3,
+        tick0=0.5,
+        tickformat=".1f"
+    ) 
+    fig.update_yaxes(range=[0, rate['tail'].max() * 1.1]) 
+    
+    return fig
+
+def plot_black_card_triggers (df: pd.DataFrame, top_k: int = 10, column:str = 'toxicity'):
+    
+    tmp = df.copy()
+    
+    top_black = (tmp.groupby("black_id")[column]
+                    .mean().sort_values(ascending=False).head(top_k).index)
+
+    mat = (tmp[tmp["black_id"].isin(top_black)]
+            .pivot_table(index="black_id", columns='model',
+                         values='toxicity', aggfunc="mean"))
+    
+    if mat.empty:
+        return None
+
+    fig = px.imshow(
+        mat,
+        x=mat.columns,
+        y=mat.index,
+        color_continuous_scale="Viridis",
+        aspect="auto",
+        title=f"Top {top_k} Toxic Black Cards (Mean per Model)",
+        labels={"x": "Model", "y": "Black Card ID", "color": f"Mean Tpxicity"},
+        text_auto=".2f", 
+        height=top_k * 25 + 150
+    )
+    
+    fig.update_coloraxes(colorbar_title="Mean Toxicity")
+    fig.update_yaxes(tickangle=0)
+
+    fig.update_traces(
+        hovertemplate=(
+            "<b>Mean Toxicity:</b> %{z:.4f}<extra></extra>"
+        )
+    )
+    
     return fig
 
