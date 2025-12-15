@@ -66,4 +66,4 @@ def load_env() -> None:
         return
     
 def build_play_key (black_id: str, winners: list) -> str: # B1|W1,W2,W3...
-    return f"{black_id}|{winners}"
+    return f"{black_id}|{winners[0]}"
