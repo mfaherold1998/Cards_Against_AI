@@ -5,7 +5,6 @@ import ast
 import numpy as np
 from typing import Dict
 from pathlib import Path
-import os
 import re
 import json
 
@@ -36,11 +35,11 @@ def calculate_models_inconsistencies(df: pd.DataFrame, key_cols: list = ['config
     df_consistency = df_grouped.agg(
         total_rounds=('winners', 'size'),  
         most_frequent_cards=('winners', lambda x: x.mode()[0]), 
-        most_frequent_winner=('winners', lambda x: x.value_counts().max()) 
+        winning_frequence=('winners', lambda x: x.value_counts().max()) 
     ).reset_index()
 
     # 5. Calcular la Tasa de Elección Mayoritaria (TEM)
-    df_consistency['MER'] = df_consistency['most_frequent_winner'] / df_consistency['total_rounds']
+    df_consistency['MER'] = df_consistency['winning_frequence'] / df_consistency['total_rounds']
     
     return df_consistency
 
@@ -153,10 +152,10 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
 #----- Judge Description pattern analysis ----------
 
 # Just for winners files
-def judge_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], results_dir: str) -> pd.DataFrame:
+def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], results_dir: str) -> pd.DataFrame:
     """
     Calculate the average toxicity (columns 'toxicity' and 'severe_toxicity') of the experiment results 
-    and group them by the judge's description ('judge_description'). returns a Pandas DataFrame with 
+    and group them by the judge's description ('character_description'). returns a Pandas DataFrame with 
     the average toxicity per judge description.
     """
 
@@ -166,11 +165,11 @@ def judge_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], re
     for file_name, df in dicc.items():
         match = run_id_pattern.search(file_name)
         if not match:
-            print(f"Warning: The 'run_id' could not be extracted from the file '{file_name}'. This file is skipped.")
+            logger.info(f"Warning: The 'run_id' could not be extracted from the file '{file_name}'. This file is skipped.")
             continue
         
         run_id = match.group(0)
-        judge_description = 'ERROR: Description not found'
+        character_description = 'ERROR: Description not found'
 
         
         config_path = Path(f'{results_dir}/{run_id}/run_config.json')
@@ -178,10 +177,10 @@ def judge_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], re
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)                
-                if 'judge_description' in config:
-                    judge_description = config['judge_description']
+                if 'character_description' in config:
+                    character_description = config['character_description']
                 else:
-                    judge_description = 'JUDGE_DESCRIPTION_MISSING'
+                    character_description = 'character_description_missing'
                     
         except FileNotFoundError:
             print(f"Error: Configuration file not found in '{config_path}'")
@@ -199,14 +198,18 @@ def judge_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], re
             
         results.append({
             'run_id': run_id,
-            'judge_description': judge_description,
+            'character_description': character_description,
             'mean_run_toxicity': mean_toxicity,
             'mean_run_severe_toxicity': mean_severe_toxicity
         })
-
-    df_results_by_run = pd.DataFrame(results)
     
-    df_final_comparison = df_results_by_run.groupby('judge_description').agg(
+    df_results_by_run = pd.DataFrame(results)
+
+    if df_results_by_run.empty:
+        logger.info("Warning: The list of results is empty (input dictionary was empty or all files were skipped). Returning an empty DataFrame.")
+        return pd.DataFrame()
+    
+    df_final_comparison = df_results_by_run.groupby('character_description').agg(
         run_number=('run_id', 'count'),
         mean_toxicity=('mean_run_toxicity', 'mean'),
         mean_severe_toxicity=('mean_run_severe_toxicity', 'mean')

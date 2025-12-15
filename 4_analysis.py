@@ -16,7 +16,6 @@ def main():
     # 1. Get parameters from json config
     config_params = get_args(5)
     analysis_dir = config_params.get("analysis_dir")
-    analysis_plot_dir = config_params.get("analysis_plot_dir")
     file_type = config_params.get("file_type")
     results_dir = config_params.get("results_dir")
 
@@ -51,9 +50,9 @@ def main():
             elif 'combinations' in name:
                  judges_files_dict['combinations'][name] = df
 
-    logger.info(f"ANALIZING FILES AND CREATING GRAPHS...")
+    logger.info(f"ANALIZING FILES...")
+    
     # 4. Analyzing players files
-
     # Winners files
     inconsistencies_players = {}    # { "file_name" : pd.DataFrame, ...}
     success_rate_players = {}       # { "file_name" : pd.DataFrame, ...}
@@ -66,8 +65,7 @@ def main():
     for name, df in players_files_dict['combinations'].items():
         overall_toxicity_players[name] = calculate_overall_toxicity(df)
     
-    # 5. Analyzing judges files
-    
+    # 5. Analyzing judges files    
     # Winners files
     inconsistencies_judges = {}    # { "file_name" : pd.DataFrame, ...}
     success_rate_judges = {}       # { "file_name" : pd.DataFrame, ...}
@@ -82,9 +80,33 @@ def main():
     
 
     # 6. Judge descriptions Comparisons
-    df_judge_description_tox_players = judge_description_comparison_mean_toxicity(players_files_dict['winners'], results_dir)
-    df_judge_description_tox_judges = judge_description_comparison_mean_toxicity(judges_files_dict['winners'], results_dir)
+    df_character_description_tox_players = character_description_comparison_mean_toxicity(players_files_dict['winners'], results_dir)
+    df_character_description_tox_judges = character_description_comparison_mean_toxicity(judges_files_dict['winners'], results_dir)
+
+    logger.info(f"SAVING RESULTS...")
+
+    # 7. Save Results   
+
+    for name, df in inconsistencies_players.items():
+        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_inconsistencies.{file_type}",index=False, header=True, sheet_name="inconsistencies")
+    for name, df in success_rate_players.items():
+        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_success_rate.{file_type}",index=False, header=True, sheet_name="success_rate")
+    for name, df in overall_toxicity_players.items():
+        df[0].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
+        df[1].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_severe_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
+    for name, df in inconsistencies_judges.items():
+        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_inconsistencies.{file_type}",index=False, header=True, sheet_name="inconsistencies")
+    for name, df in success_rate_judges.items():
+        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_success_rate.{file_type}",index=False, header=True, sheet_name="success_rate")
+    for name, df in overall_toxicity_judges.items():
+        df[0].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
+        df[1].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_severe_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")    
     
+    if not df_character_description_tox_players.empty:
+        df_character_description_tox_players.to_excel(ANALYSIS_RESULTS_DIR / f"players_tox_by_character_description.{file_type}",index=False, header=True, sheet_name="character_description_tox")
+    if not df_character_description_tox_judges.empty:
+        df_character_description_tox_judges.to_excel(ANALYSIS_RESULTS_DIR / f"judges_tox_by_character_description.{file_type}",index=False, header=True, sheet_name="character_description_tox")
+        
     logger.info("END")
 
 

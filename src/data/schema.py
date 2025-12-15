@@ -146,3 +146,4 @@ class JsonConfigSchema_3(BaseModel):
 class JsonConfigSchema_5(BaseModel):
     analysis_dir: str
     file_type: str
+    results_dir: str

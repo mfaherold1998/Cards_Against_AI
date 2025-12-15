@@ -15,7 +15,7 @@ SCHEMA_NUM_MAP = {
     1 : JsonConfigSchema_1,
     2 : JsonConfigSchema_2,
     3: JsonConfigSchema_3,
-    4: JsonConfigSchema_2,
+    4: JsonConfigSchema_2, # File erased!!
     5: JsonConfigSchema_5
 }
 
