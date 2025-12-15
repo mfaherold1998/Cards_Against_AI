@@ -1,6 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import ast
 import numpy as np
 from typing import Dict
@@ -43,9 +41,10 @@ def calculate_models_inconsistencies(df: pd.DataFrame, key_cols: list = ['config
     
     return df_consistency
 
+# Is not in use
 def calculate_success_rate(df: pd.DataFrame) -> pd.DataFrame:
     '''
-    Calculate the Observed Success Rate (wins / appearances) for each blank using only the winners file.
+    Calculate the Overall Observed Success Rate (wins / appearances) for each blank using only the winners file.
     '''
 
     df_temp = df.copy()
@@ -80,12 +79,50 @@ def calculate_success_rate(df: pd.DataFrame) -> pd.DataFrame:
 
     return df_results
 
+def calculate_success_rate_by_model(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Calculate the Observed Success Rate (wins / appearances) for each blank, 
+    grouped by the Model that acted as the judge.
+    '''
+
+    df_temp = df.copy()
+
+    # 1. Convert winners and play in a list
+    import ast
+    df_temp['play'] = df_temp['play'].apply(ast.literal_eval)
+    df_temp['winners'] = df_temp['winners'].apply(ast.literal_eval)
+    df_temp['winner_id'] = df_temp['winners'].apply(lambda x: x[0].strip() if x else None)
+
+    # 2. Count how many times each card won grouped by model and card
+    victories = df_temp.groupby(['model', 'winner_id']).size().reset_index(name='victories')
+    victories.rename(columns={'winner_id': 'white_id'}, inplace=True)
+
+    # 3. Counting how many times a card appears
+    df_expanded = df_temp.explode('play')
+    df_expanded['white_id_appeared'] = df_expanded['play'].str.strip()
+
+    appeareances = df_expanded.groupby(['model', 'white_id_appeared']).size().reset_index(name='appearances')
+    appeareances.rename(columns={'white_id_appeared': 'white_id'}, inplace=True)
+
+    # 4. Calculate success rate
+    df_results = pd.merge(victories, appeareances, on=['model', 'white_id'], how='outer').fillna(0)
+    
+    df_results['Success_Rate'] = np.divide(df_results['victories'], df_results['appearances'], 
+                                           out=np.zeros_like(df_results['victories'], dtype=float), 
+                                           where=df_results['appearances']!=0)
+    
+    df_results = df_results.sort_values(by=['model', 'Success_Rate'], ascending=[True, False])
+
+    df_results['victories'] = df_results['victories'].astype(int)
+    df_results['appearances'] = df_results['appearances'].astype(int)
+
+    return df_results
+
 # For combinations files
-def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'lang', 'model', 'temperature', 'black_id']) -> Dict[str, pd.Series]:
+def calculate_overall_toxicity(df: pd.DataFrame, score_col:str = 'toxicity', key_cols: list = ['config', 'lang', 'model', 'temperature', 'black_id']) -> Dict[str, pd.Series]:
     '''
     Determine the toxicity of the winning card compared to the toxicity of the other options.
     '''
-
     df_temp = df.copy()
 
     # 1. Preparing the data
@@ -100,23 +137,22 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
     # Create a status columns
     df_temp['status'] = df_temp.apply(lambda row: 'Winner' if row['white_card_id'] == row['winner_id'] else 'Loser', axis=1)
 
-    # Ensure that the score columns are numeric.
-    df_temp['toxicity'] = pd.to_numeric(df_temp['toxicity'], errors='coerce')
-    df_temp['severe_toxicity'] = pd.to_numeric(df_temp['severe_toxicity'], errors='coerce')
+    # Ensure that the score column is numeric.
+    df_temp[score_col] = pd.to_numeric(df_temp[score_col], errors='coerce')
 
     # Remove rows with missing values ​​in the score or config columns
-    df_temp.dropna(subset=['toxicity', 'severe_toxicity', 'config'], inplace=True)
+    df_temp.dropna(subset=[score_col], inplace=True)
 
     # 2. Analizing toxicity column
     # Grouping using the 5 key columns
     results_toxicity = df_temp.groupby(key_cols).apply(lambda x: {
-        # ** CORRECCIÓN: Comprobación de que la Serie no esté vacía antes de llamar a iloc[0] **
+        #Check is not empty before colling iloc[0]
         'winner_score': x[x['status'] == 'Winner']['toxicity'].iloc[0] if not x[x['status'] == 'Winner'].empty else np.nan, 
-        'max_score': x['toxicity'].max(),
-        'min_score': x['toxicity'].min()
+        'max_score': x[score_col].max(),
+        'min_score': x[score_col].min()
     }, include_groups=False).apply(pd.Series)
 
-    # Eliminamos las filas donde no pudimos obtener la puntuación del ganador (datos inconsistentes)
+    # remove the rows where we could not obtain the winner's score (inconsistent data)
     results_toxicity.dropna(subset=['winner_score'], inplace=True)
 
     # Determine the pattern: Most Toxic, Least Toxic, or Intermediate
@@ -124,37 +160,14 @@ def calculate_overall_toxicity(df: pd.DataFrame, key_cols: list = ['config', 'la
     results_toxicity.loc[results_toxicity['winner_score'] == results_toxicity['max_score'], 'pattern_toxicity'] = 'Most Toxic'
     results_toxicity.loc[results_toxicity['winner_score'] == results_toxicity['min_score'], 'pattern_toxicity'] = 'Least Toxic'
 
-    # Pattern frequencies
-    pattern_counts_toxicity = results_toxicity['pattern_toxicity'].value_counts(normalize=True).mul(100).round(2)
-
-    # 3. Analizing severe_toxicity column
-    # Grouping using the 5 key columns
-    results_severe_toxicity = df_temp.groupby(key_cols).apply(lambda x: {
-        # ** CORRECCIÓN: Comprobación de que la Serie no esté vacía antes de llamar a iloc[0] **
-        'winner_score': x[x['status'] == 'Winner']['severe_toxicity'].iloc[0] if not x[x['status'] == 'Winner'].empty else np.nan,
-        'max_score': x['severe_toxicity'].max(),
-        'min_score': x['severe_toxicity'].min()
-    }, include_groups=False).apply(pd.Series)
-
-    # Eliminamos las filas donde no pudimos obtener la puntuación del ganador (datos inconsistentes)
-    results_severe_toxicity.dropna(subset=['winner_score'], inplace=True)
-
-    # Determine the pattern: More Toxic, Less Toxic, or Intermediate
-    results_severe_toxicity['pattern_severe_toxicity'] = 'Intermediate'
-    results_severe_toxicity.loc[results_severe_toxicity['winner_score'] == results_severe_toxicity['max_score'], 'pattern_severe_toxicity'] = 'Most Severe Toxic'
-    results_severe_toxicity.loc[results_severe_toxicity['winner_score'] == results_severe_toxicity['min_score'], 'pattern_severe_toxicity'] = 'Least Severe Toxic'
-
-    # Pattern frequencies
-    pattern_counts_severe_toxicity = results_severe_toxicity['pattern_severe_toxicity'].value_counts(normalize=True).mul(100).round(2)
-
-    return pattern_counts_toxicity, pattern_counts_severe_toxicity
+    return results_toxicity
 
 #----- Judge Description pattern analysis ----------
 
 # Just for winners files
-def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], results_dir: str) -> pd.DataFrame:
+def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], results_dir: str, col:str = 'toxicity') -> pd.DataFrame:
     """
-    Calculate the average toxicity (columns 'toxicity' and 'severe_toxicity') of the experiment results 
+    Calculate the average toxicity of the experiment results 
     and group them by the judge's description ('character_description'). returns a Pandas DataFrame with 
     the average toxicity per judge description.
     """
@@ -189,32 +202,38 @@ def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame]
         except Exception as e:
             print(f"Unexpected error reading the configuration '{config_path}': {e}")
         
-        if not df.empty:
-            mean_toxicity = df['toxicity'].mean()
-            mean_severe_toxicity = df['severe_toxicity'].mean()
-        else:
-            mean_toxicity = 0.0
-            mean_severe_toxicity = 0.0
-            
-        results.append({
-            'run_id': run_id,
-            'character_description': character_description,
-            'mean_run_toxicity': mean_toxicity,
-            'mean_run_severe_toxicity': mean_severe_toxicity
-        })
-    
-    df_results_by_run = pd.DataFrame(results)
+        if not df.empty and 'model' in df.columns:
+            mean_df = df.groupby('model').agg(
+                mean_run_toxicity=(col, 'mean')
+            ).reset_index()
 
-    if df_results_by_run.empty:
+            for index, row in mean_df.iterrows():
+                results.append({
+                    'run_id': run_id,
+                    'character_description': character_description,
+                    'model': row['model'],
+                    'mean_run_toxicity': row['mean_run_toxicity']
+                })
+                
+        else:
+            results.append({
+                'run_id': run_id,
+                'character_description': character_description,
+                'model': 'Model Missing',
+                'mean_run_toxicity': 0.0
+            })
+    
+    df_results_by_run_and_model = pd.DataFrame(results)
+
+    if df_results_by_run_and_model.empty:
         logger.info("Warning: The list of results is empty (input dictionary was empty or all files were skipped). Returning an empty DataFrame.")
         return pd.DataFrame()
     
-    df_final_comparison = df_results_by_run.groupby('character_description').agg(
+    df_final_comparison = df_results_by_run_and_model.groupby(['character_description', 'model']).agg(
         run_number=('run_id', 'count'),
-        mean_toxicity=('mean_run_toxicity', 'mean'),
-        mean_severe_toxicity=('mean_run_severe_toxicity', 'mean')
+        mean_toxicity=('mean_run_toxicity', 'mean')
     ).reset_index()
     
-    df_final_comparison = df_final_comparison.sort_values(by='mean_toxicity', ascending=False)
+    df_final_comparison = df_final_comparison.sort_values(by=['model', 'mean_toxicity'], ascending=False)
     
     return df_final_comparison

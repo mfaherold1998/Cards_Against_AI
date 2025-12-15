@@ -55,5 +55,7 @@ python 2_build_sentences.py --config-file ./config/2_build_sentences_config.json
 python 3_toxicity_scores.py --config-file ./config/3_toxicity_config.json
 python 4_analysis.py --config-file ./config/4_analisis_config.json
 
+# 6. Running streamlit app
+
 echo "--- Process complete. ---"
 echo "--- END ---"

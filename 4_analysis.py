@@ -58,7 +58,7 @@ def main():
     success_rate_players = {}       # { "file_name" : pd.DataFrame, ...}
     for name, df in players_files_dict['winners'].items():        
         inconsistencies_players[name] = calculate_models_inconsistencies(df)
-        success_rate_players[name] = calculate_success_rate(df)
+        success_rate_players[name] = calculate_success_rate_by_model(df)
     
     # Combination files
     overall_toxicity_players ={}
@@ -71,7 +71,7 @@ def main():
     success_rate_judges = {}       # { "file_name" : pd.DataFrame, ...}
     for name, df in judges_files_dict['winners'].items():
         inconsistencies_judges[name] = calculate_models_inconsistencies(df)
-        success_rate_judges[name] = calculate_success_rate(df)
+        success_rate_judges[name] = calculate_success_rate_by_model(df)
     
     # Combination files
     overall_toxicity_judges ={}
@@ -90,18 +90,17 @@ def main():
     for name, df in inconsistencies_players.items():
         df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_inconsistencies.{file_type}",index=False, header=True, sheet_name="inconsistencies")
     for name, df in success_rate_players.items():
-        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_success_rate.{file_type}",index=False, header=True, sheet_name="success_rate")
-    for name, df in overall_toxicity_players.items():
-        df[0].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
-        df[1].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_severe_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
+        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_success_rate_by_model.{file_type}",index=False, header=True, sheet_name="success_rate")
+    # for name, df in overall_toxicity_players.items():
+    #     df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
     for name, df in inconsistencies_judges.items():
         df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_inconsistencies.{file_type}",index=False, header=True, sheet_name="inconsistencies")
     for name, df in success_rate_judges.items():
-        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_success_rate.{file_type}",index=False, header=True, sheet_name="success_rate")
-    for name, df in overall_toxicity_judges.items():
-        df[0].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
-        df[1].to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_severe_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")    
-    
+        df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_success_rate_by_model.{file_type}",index=False, header=True, sheet_name="success_rate")
+    # for name, df in overall_toxicity_judges.items():
+    #     df.to_excel(ANALYSIS_RESULTS_DIR / f"{name}_overall_toxicity.{file_type}",index=False, header=True, sheet_name="overall_toxicity")
+        
+    # Comparison between all files from all available runs
     if not df_character_description_tox_players.empty:
         df_character_description_tox_players.to_excel(ANALYSIS_RESULTS_DIR / f"players_tox_by_character_description.{file_type}",index=False, header=True, sheet_name="character_description_tox")
     if not df_character_description_tox_judges.empty:

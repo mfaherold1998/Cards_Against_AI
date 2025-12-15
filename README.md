@@ -2,7 +2,7 @@
 
 This project simulates several single-rounds of the game **Cards Against Humanity (CAH)** using **Large Language Models (LLMs)**. The idea is simple: let models play the game, either by picking the funniest white card or by acting as the judge choosing the winning combination. The setup is designed to explore model behavior, biases, and tendencies toward irreverent or offensive humor.
 
-The full workflow is split into five modules: simulation of the game, sentence construction, toxicity scoring, visualization, and final analysis.
+The full workflow is split into five modules: simulation of the game, sentence construction, toxicity scoring, responses analysis, and visualization.
 
 ---
 
@@ -16,7 +16,7 @@ The system evaluates how different LLMs respond to the provocative style of CAH.
 Throughout the process:
 
 * The model's chosen card IDs are stored.
-* Toxicity scores are calculated for the winning results.
+* Toxicity measures are calculated for winning cards and for all card combinations among the overall options.
 * Different configurations (model, temperature, prompt type, etc.) are compared.
 
 The general process involves:
@@ -24,8 +24,9 @@ The general process involves:
 1. Running model simulations.
 2. Constructing full sentences from black and white cards (versions are built only for the winning cards and others for all the cards in the hand).
 3. Scoring toxicity using Detoxify and Perspective API.
-4. Generating visualizations.
-5. Performing a final comparative analysis between the different runs.
+4. Performing a comparative analysis between the different runs.
+5. Generating visualizations.
+
 
 Notes: Not all models are ready to play; some have stricter safety measures that prevent them from participating from the start.
 
@@ -33,11 +34,10 @@ Notes: Not all models are ready to play; some have stricter safety measures that
 
 ## 2. Dataset Description
 
-The project uses the official UK version of the **Cards Against Humanity** deck.
+The project currently use just English version of the **Cards Against Humanity** deck.
 
 Included resources:
-
-* **Card Text Dataset**: Black and white cards with unique IDs, located in `./data/EN/cards_texts`.
+* **Card Text Dataset**: Black and white cards with unique IDs files, located in `./data/EN/cards_texts`.
 * **Game Configurations**: Files defining the black card and its candidate white cards, located in `./data/EN/games_config` and `./data/EN/to-judge-config`.
 
 Descriptive statistics are available in the notebook `dataset_analysis.ipynb`.
@@ -50,7 +50,7 @@ Before installing, ensure you have:
 
 * **Python 3.12.0** or grather.
 * **Ollama** installed locally.
-* **Jupyter Notebook** (optional, for running `all_process.ipynb`)
+* **Jupyter Notebook** (optional for running the notebooks provided.)
 * **Perspective API Key** (is free for research.)
 
 ---
@@ -78,6 +78,8 @@ Core dependencies (version‑locked for reproducibility):
 * `google-auth==2.35.0`
 * `python-dotenv==1.0.1`
 * `openpyxl==3.1.5`
+* `streamlit==1.52.1`
+* `plotly==6.5.0`
 
 ---
 
@@ -105,8 +107,8 @@ Note: Each module can be run independently. Every script reads from a directory 
 | 1   | `run_llm.py`          | `python 1_run_llm.py --config-file ./config/1_run_config.json`                     |
 | 2   | `build_sentences.py`  | `python 2_build_sentences.py --config-file ./config/2_build_sentences_config.json` |
 | 3   | `toxicity_scores.py`  | `python 3_toxicity_scores.py --config-file ./config/3_toxicity_config.json`        |
-| 4   | `graphs.py`           | `python 4_graphs.py --config-file ./config/4_graphs_config.json`                   |
-| 5   | `analysis.py`         | `python 5_analysis.py --config-file ./config/5_analisis_config.json`               |
+| 4   | `analysis.py`         | `python 4_analysis.py --config-file ./config/4_analisis_config.json`               |
+| 5   | `plots_app.py`        | `streamlit run ./5_plots_app.py`                                                   |
 
 ---
 
@@ -129,6 +131,9 @@ The following variables can be found in the configuration files:
 * **detoxify_model** : "original" (detoxify model to be used; can be `original`, `unbiased`, or `multilingual`.)
 * **device** : "cpu" (can be `cpu` or `gpu`)
 * **batch_size** : 64 (batch block size for detoxify)
+* **analysis_dir** : "./results/analysis_module"
+
+A more detailed description of the entire process can be found in the notebook `all_process.ipynb`
 
 ### `run_llm.py`
 
@@ -136,8 +141,9 @@ Runs simulation rounds using the settings in `run_config.json`. Models act as pl
 
 ### `build_sentences.py`
 
-Loads results from Step 1 and constructs complete sentences by pairing black cards with winning white cards. Produces:
+Loads results from Step 1 and constructs complete sentences by pairing black cards with winning white cards. Schemes are used to ensure the integrity of the data loaded into each module.
 
+Produces:
 * All winning combinations
 * All evaluated combinations
 
@@ -148,19 +154,7 @@ Calculates toxicity scores using two sources:
 * **Detoxify** (local model)
 * **Google Perspective API**
 
-Outputs include toxicity scores across multiple dimensions.
-
-### `graphs.py`
-
-Generates plots such as:
-
-* Toxicity vs. temperature
-* Toxicity distribution per model
-* Mean toxicity per configuration
-
-Outputs are saved as PNG files.
-
-Notes: A detailed description of the graphics can be found in the notebook `all_process.ipynb`.
+Outputs include toxicity scores across multiple categories (toxicity, severe toxicity, obscene, etc).
 
 ### `analysis.py`
 
@@ -169,10 +163,13 @@ Combines all data to examine:
 * Decision consistency
 * Success rates
 * Toxicity relative to all alternatives
-* Effects of judge personality prompts
-* Differences across models
+* Effects of judge personality in models responses
 
-Produces both visual and numerical summaries.
+Produces numerical summaries.
+
+### `plots_app.py`
+
+Create a graphical interface using the streamlit library to visualize the data obtained in the previous analyses. All graphs are interactive.
 
 ---
 
@@ -181,12 +178,12 @@ Produces both visual and numerical summaries.
 ### Current Considerations
 
 * Models may act as both player and judge.
-* To avoid refusals, models output only card IDs.
+* To avoid refusals, models are asked to output only card IDs.
 * The dataset currently includes only the UK English CAH deck.
-* Invalid responses are handled via a simple fallback mechanism.
+* Invalid responses are just ignored.
 
 ### Planned Enhancements
 
-* Improve handling of invalid or ambiguous responses.
+* Tests several datasets.
 * Expand to multilingual or regional CAH decks.
 * Add adversarial prompts to probe model robustness.

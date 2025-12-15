@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from src.utils.utils import build_play_key
+from src.scripts.analysis import calculate_overall_toxicity
 
 ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obcene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
 
@@ -618,7 +619,7 @@ def plot_config_distribution(df: pd.DataFrame, target_config:str = 'random_games
     
     return fig
 
-def plot_config_tail_rate_(df: pd.DataFrame, thr: float = 0.20, column:str = 'toxicity'):
+def plot_config_tail_rate(df: pd.DataFrame, thr: float = 0.20, column:str = 'toxicity'):
     
     CLEAN_CONFIG = 'clean_config'
     tmp = df.copy()
@@ -673,3 +674,183 @@ def plot_config_tail_rate_(df: pd.DataFrame, thr: float = 0.20, column:str = 'to
     
     return fig
 
+# --- Analisis plots ---
+
+def plot_white_cards_success_rate_by_model(df: pd.DataFrame):
+    
+    df_filtered = df[df['Success_Rate'] > 0].copy()
+
+    if df_filtered.empty:
+        return None
+
+    fig = px.bar(
+        df_filtered, 
+        x='white_id',
+        y='Success_Rate',
+        color='model',
+        barmode='group',
+        title='White Cards Success Rate by Model',
+        height=600,
+        hover_data={
+            'victories': True,
+            'appearances': True,
+            'Success_Rate': ':.2f',
+            'model': False
+        }
+    )
+
+    fig.update_layout(
+        xaxis_title="White Card ID",
+        yaxis_title="Success Rate",
+        xaxis={'tickangle': 45}, 
+        yaxis=dict(range=[0, df_filtered['Success_Rate'].max() * 1.05]) 
+    )
+    
+    return fig
+
+# Analisis module calculates just by model
+def plot_white_cards_success_rate(df:pd.DataFrame):
+
+    df_filtered = df[df['Success_Rate'] > 0]
+
+    fig = px.bar(
+        df_filtered, 
+        x='Success_Rate', 
+        y='white_id',
+        orientation='h',
+        title='Overall Observed Success Rate (Victories / Appearances)',        
+        hover_data={
+            'victories': True,
+            'appearances': True,
+            'Success_Rate': ':.2f'
+        },
+        color='Success_Rate',
+        color_continuous_scale=px.colors.sequential.Viridis
+    )
+    
+    fig.update_layout(
+        yaxis={'categoryorder':'total ascending'},
+    )
+
+    return fig
+
+def plot_inconsistencies_per_model(df: pd.DataFrame):
+    
+    df_temp = df.copy()
+
+    df_temp['MER'] = pd.to_numeric(df_temp['MER'], errors='coerce')
+    
+    # 1. Create a unique configuration key for the X-axis
+    df_temp['Configuration_Key'] = df_temp[['config', 'lang', 'temperature', 'black_id']].apply(
+        lambda row: f"**{row['config']}** | {row['black_id']} | T={row['temperature']}", axis=1
+    )
+    
+    # 2. Create the vertical clustered bar chart
+    fig = px.bar(
+        df_temp, 
+        x='Configuration_Key',
+        y='MER',
+        color='model',
+        barmode='group',
+        title='Model Choice Consistency (MER) by Game Configuration',
+        labels={
+            'MER': 'Majority Election Rate (MER)',
+            'Configuration_Key': 'Game Key',
+            'model': 'Model'
+        },
+        height=650,
+        hover_data={
+            'total_rounds': True,
+            'winning_frequence': True,
+            'most_frequent_cards': True,
+            'temperature': False,
+            'black_id': False,
+            'MER': ':.2f',
+            'Configuration_Key': False 
+        }
+    )
+
+    fig.update_layout(
+        yaxis_range=[0, 1.05],
+        xaxis={'tickangle': 45},
+        legend_title_text='Modelo',
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    return fig
+
+def plot_model_tox_percentage(df:pd.DataFrame, col:str = 'toxicity'):
+
+    # 0. Set Categories
+    df_temp = calculate_overall_toxicity(df=df, score_col=col)
+    
+    # 1. Calculate the percentage of categories
+    counts_df = df_temp.groupby(['model', 'pattern_toxicity']).size().reset_index(name='count')
+    total_per_model = counts_df.groupby('model')['count'].sum().reset_index(name='total')
+    plot_data = pd.merge(counts_df, total_per_model, on='model')
+    plot_data['percentage'] = (plot_data['count'] / plot_data['total']) * 100
+
+    fig = px.bar(
+        plot_data,
+        x='model',
+        y='percentage',
+        color='pattern_toxicity',
+        text='percentage',
+        category_orders={"pattern_toxicity": ["Most Toxic", "Intermediate", "Least Toxic"]},
+        labels={
+            'model': 'Model',
+            'percentage': 'Percentage of winners cards',
+            'pattern_toxicity': 'Toxicity Pattern'
+        },
+        title='Winning Card Toxicity Pattern by Model (in Percentage)',
+        hover_data={'count': True, 'total': True, 'percentage': ':.2f'}
+    )
+
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='inside')
+    fig.update_layout(yaxis=dict(range=[0, 100]))
+
+    return fig
+
+def plot_jude_description_comparison(df:pd.DataFrame):
+
+    df_melted = df.melt(
+        id_vars=['character_description', 'model', 'run_number'],
+        value_vars=['mean_toxicity'],
+        var_name='Toxicity_Metric',  # Columna que se usará para el eje X
+        value_name='Average_Score'   # Columna que se usará para el eje Y
+    )
+
+    # 2. Creación del Gráfico Interactivo de Barras con Facetas
+    fig = px.bar(
+        df_melted,  # Usar el DataFrame derretido
+        x='Toxicity_Metric',
+        y='Average_Score',
+        color='model',
+        barmode='group',
+        facet_col='character_description',
+        # El orden se basa en las descripciones únicas en el DF derretido
+        category_orders={"character_description": df_melted['character_description'].unique().tolist()},
+        hover_data={'run_number': True},
+        labels={
+            'character_description': 'Judge Description',
+            'Average_Score': 'Average Toxicity Score',
+            'Toxicity_Metric': 'Metric'
+        },
+        title='Average Toxicity per Model Under Different Judge Descriptions',
+        height=500
+    )
+
+    # 3. Ajustes de formato
+    # Limpiar títulos de faceta (quita "character_description=")
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+    
+    # Limpiar la leyenda del modelo (quita sufijos de modelo y métrica)
+    fig.for_each_trace(lambda t: t.update(name=t.name.replace(':3:4b', '').replace('mean_', '').replace('_toxicity', '')))
+    
+    # Ajustar el título de la leyenda de color
+    fig.update_layout(legend_title_text='Model')
+    
+    # Quitar título del eje X y rotar etiquetas
+    fig.update_xaxes(title_text='', tickangle=45)
+
+    return fig
