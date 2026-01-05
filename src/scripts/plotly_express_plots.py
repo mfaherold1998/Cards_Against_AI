@@ -6,13 +6,13 @@ from plotly.subplots import make_subplots
 from src.utils.utils import build_play_key
 from src.scripts.analysis import calculate_overall_toxicity
 
-ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obcene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
+ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
 
-def plot_toxicity_vs_temperature (df:pd.DataFrame):
+def plot_toxicity_vs_temperature (df:pd.DataFrame, col:str = 'toxicity'):
     
     df_plot_line = df.groupby(['model', 'temperature'], as_index=False).agg(
-        mean_tox = ('toxicity', 'mean'),
-        std_tox = ('toxicity', 'std')
+        mean_tox = (col, 'mean'),
+        std_tox = (col, 'std')
     )
     df_plot_line['std_tox'] = df_plot_line['std_tox'].fillna(0)
 
@@ -30,7 +30,7 @@ def plot_toxicity_vs_temperature (df:pd.DataFrame):
         custom_data=['std_tox'],
         title='Mean Toxicity vs Temperature (per model)',
         labels={
-            'mean_tox': 'Mean Toxicity (Score)'
+            'mean_tox': f'Mean {col} (Score)'
         }
     )
 
@@ -69,9 +69,9 @@ def plot_toxicity_vs_temperature (df:pd.DataFrame):
 
     return fig
 
-def plot_toxicity_vs_temperature_shaded(df: pd.DataFrame):
+def plot_toxicity_vs_temperature_shaded(df: pd.DataFrame, col:str = 'toxicity'):
     
-    g = (df.groupby(['model', 'temperature'])['toxicity']
+    g = (df.groupby(['model', 'temperature'])[col]
            .agg(["mean", "count", "std"]).reset_index())
     g["sem"] = g["std"] / np.sqrt(g["count"].clip(lower=1))
     
@@ -96,7 +96,7 @@ def plot_toxicity_vs_temperature_shaded(df: pd.DataFrame):
         markers=True,
         title=f"Mean toxicity vs Temperature (shaded area)",
         labels={
-            'mean': "Mean Toxicity",
+            'mean': f"Mean {col}",
             'temperature': "Temperature"
         },
         hover_data={
@@ -143,12 +143,12 @@ def plot_toxicity_vs_temperature_shaded(df: pd.DataFrame):
 
     return fig
 
-def plot_distribution_by_model (df:pd.DataFrame):
+def plot_distribution_by_model (df:pd.DataFrame, col:str = 'toxicity'):
     
     fig = px.violin(
         data_frame=df,
         x='model',
-        y='toxicity',
+        y=col,
         color='model',
         box=True,
         points='all',
@@ -156,7 +156,7 @@ def plot_distribution_by_model (df:pd.DataFrame):
         title='Toxicity Distribution per model',
         labels={
             'model': 'LLM',
-            'toxicity': 'Toxicity (Score)'
+            col: f'{col} (Score)'
         },
         template="plotly_white"
     )
@@ -168,7 +168,7 @@ def plot_distribution_by_model (df:pd.DataFrame):
     )
     
     hover_template = '<b>Modelo:</b> %{x}<br>' + \
-                    '<b>Toxicidad:</b> %{y:.4f}<br>' + \
+                    '<b>Score:</b> %{y:.4f}<br>' + \
                     '<b>Idioma:</b> %{customdata[0]}<br>' + \
                     '<b>Temperatura:</b> %{customdata[1]}<extra></extra>'
 
@@ -179,10 +179,10 @@ def plot_distribution_by_model (df:pd.DataFrame):
 
     return fig
 
-def plot_rates_above_threshold (df:pd.DataFrame, thr:float = 0.5, column:str = 'toxicity'):
+def plot_rates_above_threshold (df:pd.DataFrame, thr:float = 0.5, col:str = 'toxicity'):
     
     tmp = df.copy()
-    tmp["tail"] = (tmp[column] >= thr).astype(int) 
+    tmp["tail"] = (tmp[col] >= thr).astype(int) 
 
     # Percentage of toxicity above the threshold.
     rate = (tmp.groupby(['model', 'temperature'])["tail"]
@@ -216,11 +216,11 @@ def plot_rates_above_threshold (df:pd.DataFrame, thr:float = 0.5, column:str = '
     
     return fig
 
-def plot_black_card_triggers (df: pd.DataFrame, top_k: int = 10, column:str = 'toxicity'):
+def plot_black_card_triggers (df: pd.DataFrame, top_k: int = 10, col:str = 'toxicity'):
     
     tmp = df.copy()
     
-    top_black = (tmp.groupby("black_id")[column]
+    top_black = (tmp.groupby("black_id")[col]
                     .mean().sort_values(ascending=False).head(top_k).index)
 
     mat = (tmp[tmp["black_id"].isin(top_black)]
@@ -253,7 +253,7 @@ def plot_black_card_triggers (df: pd.DataFrame, top_k: int = 10, column:str = 't
     
     return fig
 
-def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:str = 'toxicity'):
+def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, col:str = 'toxicity'):
     
     tmp = df.copy()
     
@@ -278,7 +278,7 @@ def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:s
             
         df_model = tmp[tmp['model'] == model_name].copy()
        
-        top_plays_series = (df_model.groupby("play_key")[column]
+        top_plays_series = (df_model.groupby("play_key")[col]
                             .mean().sort_values(ascending=False).head(top_k))
         
         top_plays_index = top_plays_series.index
@@ -288,7 +288,7 @@ def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:s
 
         mat = (df_model[df_model["play_key"].isin(top_plays_index)]
                 .pivot_table(index="play_key", columns='model',
-                            values=column, aggfunc="mean"))
+                            values=col, aggfunc="mean"))
         
         mat = mat.reindex(top_plays_index)
 
@@ -303,7 +303,7 @@ def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:s
             texttemplate="%{text:.2f}",
             textfont={"size": 10},
             hovertemplate=(
-                f"<b>Mean {column.title()}:</b> %{{z:.4f}}<br>"
+                f"<b>Mean {col.title()}:</b> %{{z:.4f}}<br>"
             )
         )
 
@@ -321,7 +321,7 @@ def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:s
         row_counter += 1
 
     fig.update_layout(
-        title_text=f"Top {top_k} Toxic Plays per Model — Ranked by {column.title()}",
+        title_text=f"Top {top_k} Toxic Plays per Model — Ranked by {col.title()}",
         height=num_models * top_k * 30 + 150,
         width=800
     )
@@ -332,7 +332,7 @@ def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:s
         else:
             fig.data[i-1].colorbar = dict(
                 title=dict(
-                    text=f"Mean {column.title()}",
+                    text=f"Mean {col.title()}",
                     side="right"
                 ),
                 len=0.9,
@@ -341,12 +341,12 @@ def plot_top_plays_heatmap_per_model(df: pd.DataFrame, top_k: int = 10, column:s
 
     return fig
 
-def plot_instability(df: pd.DataFrame, top_n: int = 10):
+def plot_instability(df: pd.DataFrame, top_k: int = 10, col:str = 'toxicity'):
     
     tmp = df.copy()
     tmp["play_key"] = [build_play_key(b, w) for b, w in zip(tmp['black_id'], tmp['winners'])]
 
-    stability = (tmp.groupby(['model', 'temperature', "play_key"])['toxicity']
+    stability = (tmp.groupby(['model', 'temperature', "play_key"])[col]
                    .agg(["mean", "std", "count"]).reset_index()
                    .rename(columns={"mean": "tox_mean", "std": "tox_std", "count": "n"}))
     
@@ -365,7 +365,7 @@ def plot_instability(df: pd.DataFrame, top_n: int = 10):
         hover_data=['play_key', 'n', 'temperature'],
         title="Mean Toxicity vs. Instability (Standard Deviation)",
         labels={
-            "tox_mean": "Average Toxicity (tox_mean)",
+            "tox_mean": f"Average {col} (tox_mean)",
             "tox_std": "Instability (tox_std)",
             "size_px": "N Observations"
         }
@@ -373,7 +373,7 @@ def plot_instability(df: pd.DataFrame, top_n: int = 10):
 
     # 3. Graph 2: Barplot (Top N Instability)
     top_play_keys = (stability.groupby("play_key")["tox_std"]
-                     .mean().sort_values(ascending=False).head(top_n).index)
+                     .mean().sort_values(ascending=False).head(top_k).index)
     
     top_unstable = stability[stability["play_key"].isin(top_play_keys)].copy()
     
@@ -385,10 +385,10 @@ def plot_instability(df: pd.DataFrame, top_n: int = 10):
         y="play_key", 
         color='model',
         orientation='h',
-        title=f"Top {top_n} Most Unstable Combinations (High STD)",
+        title=f"Top {top_k} Most Unstable Combinations (High STD)",
         category_orders={"play_key": order_map.index.tolist()},
         labels={
-            "tox_std": "STD of Toxicity (tox_std)",
+            "tox_std": f"STD of {col} (tox_std)",
             "play_key": "Play Key (Black | White)"
         }
     )
@@ -396,8 +396,8 @@ def plot_instability(df: pd.DataFrame, top_n: int = 10):
     fig = make_subplots(
         rows=2, cols=1,
         subplot_titles=(
-            f"Scatter: Mean Toxicity vs. Instability",
-            f"Bar: Top {top_n} Unstable Plays"
+            f"Scatter: Mean {col} vs. Instability",
+            f"Bar: Top {top_k} Unstable Plays"
         ),
         row_heights=[0.6, 0.4]
     )
@@ -465,8 +465,8 @@ def plot_category_comparison(df: pd.DataFrame):
     
     return fig
 
-def _summarize_toxicity(d: pd.DataFrame) -> pd.DataFrame:
-    return (d.groupby(['model', 'lang'])['toxicity'] 
+def _summarize_toxicity(d: pd.DataFrame, col:str = 'toxicity') -> pd.DataFrame:
+    return (d.groupby(['model', 'lang'])[col] 
             .agg(mean="mean",
                  p50=lambda s: s.quantile(.5),
                  p90=lambda s: s.quantile(.9),
@@ -474,14 +474,14 @@ def _summarize_toxicity(d: pd.DataFrame) -> pd.DataFrame:
             .round(3)
             .reset_index()) 
 
-def plot_language_risk_faceted(df: pd.DataFrame):
+def plot_language_risk_faceted(df: pd.DataFrame, col:str = 'toxicity'):
 
     df_clean = df.dropna(subset=['lang']).copy()
     
     if df_clean.empty:
         return None
 
-    agg_df = _summarize_toxicity(df_clean)
+    agg_df = _summarize_toxicity(df_clean, col)
     
     df_melted = agg_df.melt(
         id_vars=['model', 'lang'],
@@ -500,7 +500,7 @@ def plot_language_risk_faceted(df: pd.DataFrame):
         title=f"Toxicity Profile per Model, Faceted by Language",
         labels={
             'model': "Model",
-            "Score": "Toxicity Score",
+            "Score": f"{col} Score",
             "Metric": "Metric"
         },
         height=550,
@@ -513,7 +513,7 @@ def plot_language_risk_faceted(df: pd.DataFrame):
     
     fig.update_layout(
         margin=dict(l=50, r=50, t=80, b=50),
-        legend_title_text="Métricas de Riesgo",
+        legend_title_text="Risk Metrics",
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -525,7 +525,7 @@ def plot_language_risk_faceted(df: pd.DataFrame):
         
     return fig
 
-def plot_config_toxicity_per_model(df: pd.DataFrame, min_n: int = 1, column:str = 'toxicity'):
+def plot_config_toxicity_per_model(df: pd.DataFrame, min_n: int = 1, col:str = 'toxicity'):
     
     CLEAN_CONFIG = 'clean_config'
     tmp = df.copy()
@@ -535,7 +535,7 @@ def plot_config_toxicity_per_model(df: pd.DataFrame, min_n: int = 1, column:str 
         
     tmp[CLEAN_CONFIG] = tmp['config'].astype(str)
 
-    stats = (tmp.groupby([CLEAN_CONFIG, 'model'])[column]
+    stats = (tmp.groupby([CLEAN_CONFIG, 'model'])[col]
                .agg(mean="mean", count="count").reset_index())
     
     stats = stats[stats["count"] >= min_n]
@@ -555,13 +555,13 @@ def plot_config_toxicity_per_model(df: pd.DataFrame, min_n: int = 1, column:str 
         color_continuous_scale="Viridis",
         aspect="auto",
         title=f"Mean Toxicity by Configuration per Model",
-        labels={"x": "Model", "y": "Configuration", "color": "Mean Toxicity"},
+        labels={"x": "Model", "y": "Configuration", "color": f"Mean {col}"},
         text_auto=".3f",
         height=max(500, 30 * len(mat.index) + 100),
         width=800
     )
     
-    fig.update_coloraxes(colorbar_title="Mean Toxicity")
+    fig.update_coloraxes(colorbar_title=f"Mean {col}")
 
     fig.update_traces(
         hovertemplate="<extra></extra>"
@@ -570,7 +570,7 @@ def plot_config_toxicity_per_model(df: pd.DataFrame, min_n: int = 1, column:str 
 
     return fig
 
-def plot_config_distribution(df: pd.DataFrame, target_config:str = 'random_games_5'):
+def plot_config_distribution(df: pd.DataFrame, target_config:str = 'toxic_games_9', col:str = 'toxicity'):
     
     CLEAN_CONFIG = 'clean_config'
     tmp = df.copy()
@@ -588,7 +588,7 @@ def plot_config_distribution(df: pd.DataFrame, target_config:str = 'random_games
 
     fig = px.violin(
         df_filtered,
-        x='toxicity',
+        x=col,
         y=CLEAN_CONFIG,
         color='model',
         orientation='h',
@@ -597,14 +597,14 @@ def plot_config_distribution(df: pd.DataFrame, target_config:str = 'random_games
         # category_orders={'CLEAN_CONFIG': sorted(tmp[CLEAN_CONFIG].unique())},
         title=f"Toxicity Distribution by Configuration (Split by Model)",
         labels={
-            'toxicity': "Toxicity Score",
+            col: f"{col} Score",
             CLEAN_CONFIG: "Game Configuration"
         },
         height=max(600, 30 * tmp[CLEAN_CONFIG].nunique() + 100), 
         width=900
     )
     
-    fig.update_xaxes(range=[0, 1.05], title_text=f"Toxicity Score")
+    fig.update_xaxes(range=[0, 1.05], title_text=f"{col} Score")
     
     fig.update_layout(
         legend_title_text="Model",
@@ -619,7 +619,7 @@ def plot_config_distribution(df: pd.DataFrame, target_config:str = 'random_games
     
     return fig
 
-def plot_config_tail_rate(df: pd.DataFrame, thr: float = 0.20, column:str = 'toxicity'):
+def plot_config_tail_rate(df: pd.DataFrame, thr: float = 0.20, col:str = 'toxicity'):
     
     CLEAN_CONFIG = 'clean_config'
     tmp = df.copy()
@@ -628,7 +628,7 @@ def plot_config_tail_rate(df: pd.DataFrame, thr: float = 0.20, column:str = 'tox
         return None
     
     tmp[CLEAN_CONFIG] = tmp['config'].astype(str)
-    tmp["tail"] = (tmp[column] >= thr).astype(int)
+    tmp["tail"] = (tmp[col] >= thr).astype(int)
 
     rate = (tmp.groupby([CLEAN_CONFIG, 'model'])["tail"]
               .mean().mul(100).reset_index())
@@ -676,6 +676,33 @@ def plot_config_tail_rate(df: pd.DataFrame, thr: float = 0.20, column:str = 'tox
 
 # --- Analisis plots ---
 
+# --- Currently not in use ---
+def plot_white_cards_success_rate(df:pd.DataFrame):
+
+    df_filtered = df[df['Success_Rate'] > 0]
+
+    fig = px.bar(
+        df_filtered, 
+        x='Success_Rate', 
+        y='white_id',
+        orientation='h',
+        title='Overall Observed Success Rate (Victories / Appearances)',        
+        hover_data={
+            'victories': True,
+            'appearances': True,
+            'Success_Rate': ':.2f'
+        },
+        color='Success_Rate',
+        color_continuous_scale=px.colors.sequential.Viridis
+    )
+    
+    fig.update_layout(
+        yaxis={'categoryorder':'total ascending'},
+    )
+
+    return fig
+# ----------------------------
+
 def plot_white_cards_success_rate_by_model(df: pd.DataFrame):
     
     df_filtered = df[df['Success_Rate'] > 0].copy()
@@ -706,32 +733,6 @@ def plot_white_cards_success_rate_by_model(df: pd.DataFrame):
         yaxis=dict(range=[0, df_filtered['Success_Rate'].max() * 1.05]) 
     )
     
-    return fig
-
-# Analisis module calculates just by model
-def plot_white_cards_success_rate(df:pd.DataFrame):
-
-    df_filtered = df[df['Success_Rate'] > 0]
-
-    fig = px.bar(
-        df_filtered, 
-        x='Success_Rate', 
-        y='white_id',
-        orientation='h',
-        title='Overall Observed Success Rate (Victories / Appearances)',        
-        hover_data={
-            'victories': True,
-            'appearances': True,
-            'Success_Rate': ':.2f'
-        },
-        color='Success_Rate',
-        color_continuous_scale=px.colors.sequential.Viridis
-    )
-    
-    fig.update_layout(
-        yaxis={'categoryorder':'total ascending'},
-    )
-
     return fig
 
 def plot_inconsistencies_per_model(df: pd.DataFrame):

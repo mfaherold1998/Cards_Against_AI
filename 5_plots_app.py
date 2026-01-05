@@ -1,5 +1,9 @@
 import streamlit as st
 from src.scripts import streamlit_app as sa
+try:
+    from src.scripts import plotly_express_plots as user_plots
+except ImportError:
+    user_plots = None
 
 # Page configuration
 st.set_page_config(page_title="Toxicity Plots of LLMs", layout="wide")
@@ -123,6 +127,42 @@ def main():
                     sa.remove_files_from_session([selected_file])
 
         st.markdown("---")
+
+        # --- GRAPHICS MENU (LOGIC INTEGRATION) ---
+        selected_chart_function = None
+        chart_params = {}
+
+        if selected_file:
+            st.header("📈 Visualization Settings")
+            
+            # 1. Identify Document Type
+            doc_type = sa.get_document_type(selected_file)
+            
+            # 2. Get Available Charts for this Type
+            available_charts_dict = sa.get_available_charts_for_type(doc_type)
+            
+            if not available_charts_dict:
+                st.warning(f"No charts defined for document type: '{doc_type}'")
+            else:
+                # 3. Chart Selection
+                selected_chart_name = st.selectbox(
+                    "Select Plot",
+                    options=list(available_charts_dict.keys()),
+                    index=None,
+                    placeholder="Choose a chart type..."
+                )
+                
+                # 4. Render Dynamic Controls (Thresholds, Columns, etc.)
+                if selected_chart_name:
+                    
+                    selected_chart_function = available_charts_dict[selected_chart_name]
+                    
+                    # Pass the dataframe to the logic to populate selectboxes with real columns
+                    df = st.session_state['data_store'][selected_file]
+                    chart_params = sa.render_chart_controls(selected_chart_function, df)
+        
+        else:
+            st.info("Select a file above to see available charts.")
         
 
     # --- MAIN AREA ---
@@ -143,11 +183,11 @@ def main():
         # Force a rerun so the uploader clears immediately
         st.rerun()
 
-    # 1. File Management (Compact Expander)
-    
-
     # 2. Preview Area
     if selected_file:
+
+        st.markdown(f"### 📄 Active File: `{selected_file}`")
+
         # --- MODIFIED: Small UI tweak for consistency ---
         if st.checkbox("Show data"): # Optional: value=True if you want it open by default      
         
@@ -157,6 +197,31 @@ def main():
             # Simple preview as requested
             st.dataframe(df.head(), use_container_width=True)
             st.caption(f"Shape: {df.shape[0]} rows, {df.shape[1]} columns")
+
+        st.markdown("---")
+
+        # 2. Render the Chart
+        if selected_chart_function and user_plots:
+            try:
+                # Dynamically get the function from your file
+                if hasattr(user_plots, selected_chart_function):
+                    plot_func = getattr(user_plots, selected_chart_function)
+                    
+                    # Call the function passing df + the dynamic params dictionary
+                    df = st.session_state['data_store'][selected_file]
+                    fig = plot_func(df, **chart_params)
+                    
+                    if fig:
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.warning("The function returned no figure.")
+                else:
+                    st.error(f"Function `{selected_chart_function}` not found in `plotly_express_plots.py`")
+            except Exception as e:
+                st.error(f"Error generating chart: {e}")
+                st.exception(e) # This helps debugging exactly which parameter failed
+        elif selected_file and not selected_chart_function:
+            st.info("👈 Select a chart from the sidebar to visualize.")
         
     else:
         st.info("👈 Please upload and select a file from the sidebar to start.")
