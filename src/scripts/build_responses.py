@@ -30,7 +30,27 @@ def _match_ID_spaces(row:pd.Series, cards: dict) -> bool:
     except Exception as e:
         logger.error(f"KeyError in _match_ID_spaces: {e}. Row: {row.to_dict()}")
         return False       
-    
+
+def _is_valid_response(row:pd.Series, cards: dict):
+        
+        if not _match_ID_spaces(row, cards):
+            return False
+        
+        valid_ids = row.get('play', [])
+        found_ids = row['winners']
+        
+        is_subset = set(found_ids).issubset(set(valid_ids))
+        
+        return is_subset
+
+def _safe_literal_eval(val):
+        if isinstance(val, str) and val.startswith('['):
+            try:
+                return ast.literal_eval(val)
+            except (ValueError, SyntaxError):
+                return []
+        return val if isinstance(val, list) else []
+
 def split_responses(df:pd.DataFrame, cards: dict):
     ''' 
         Returns 3 dataframes:
@@ -44,6 +64,8 @@ def split_responses(df:pd.DataFrame, cards: dict):
     if 'response' not in df_temp.columns:
         logger.error("There is not 'response' column to analyze. Returning three empty DataFrames.")
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    
+    df_temp['play'] = df_temp['play'].apply(_safe_literal_eval)
 
     df_temp['winners'] = df_temp['response'].str.findall(pattern_id)
 
@@ -56,7 +78,7 @@ def split_responses(df:pd.DataFrame, cards: dict):
     df_temp = df_temp.drop(columns=['response'])
 
     # Split 2: Apply the row validation function (axis=1)
-    mask_matched = df_temp.apply(_match_ID_spaces, cards=cards, axis=1)
+    mask_matched = df_temp.apply(_is_valid_response, cards=cards, axis=1)
     # df_mismatch: contains the rows where the count does not match (False)
     df_mismatch = df_temp[~mask_matched].copy()
 

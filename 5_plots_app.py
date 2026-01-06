@@ -213,6 +213,10 @@ def main():
                     
                     if fig:
                         st.plotly_chart(fig, use_container_width=True)
+                        description = sa.get_chart_description(selected_chart_function)
+                        if description:
+                            with st.expander("ℹ️ Description & Interpretation", expanded=True):
+                                st.markdown(description)
                     else:
                         st.warning("The function returned no figure.")
                 else:

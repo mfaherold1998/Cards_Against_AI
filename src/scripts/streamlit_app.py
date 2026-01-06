@@ -358,3 +358,155 @@ def render_chart_controls(chart_function_name, df):
         st.info("This chart does not have configurable parameters.")
         
     return params
+
+# --- Graphs desciptions ---
+CHART_DESCRIPTIONS = {
+    
+    # Plot 1
+    "plot_toxicity_vs_temperature": 
+    """
+    **Description:** Generates a line chart with error bars. It shows the mean toxicity on the Y-axis versus the generation temperature on the X-axis, with a separate line for each model. The error bars represent the 95% confidence interval (using 1.96 x Standard Error of the Mean (SEM)).
+    
+    **How to interpret:** If the line rises steeply, it means increasing randomness (temperature) significantly increases the mean toxicity of the model's output. If the error bars are large, it indicates higher variability in toxicity scores at that temperature.
+    """,
+    
+    #Plot 2
+    "plot_toxicity_vs_temperature_shaded": 
+    """
+    **Description:** Generates separate line charts (one per model). Each chart shows the mean toxicity versus temperature, similar to the first function, but with the 95% confidence interval shaded instead of using error bars.
+
+    **How to interpret**: Represents the individual trend of toxicity vs. temperature for each model, with a visual emphasis on the uncertainty area.
+    """,
+    
+    # Plot 3
+    "plot_distribution_by_model": 
+    """
+    **Description:** Generates a violin plot. It shows the distribution of the toxicity score for each model. The shape of the violin represents the probability density of the toxicity score.
+
+    **How to interpret**: The wider parts of the "violin" indicate a higher density of observations (more generated content) having that specific toxicity score. A violin plot that is wider near the high end of the Y-axis (e.g., closer to 1.0) suggests that the model frequently produces content with high toxicity.
+    """,
+
+    # Plot 4
+    "plot_rates_above_threshold": 
+    """
+    **Description:** Percentage of generated content whose toxicity score is greater than or equal to a specified threshold (thr, default 0.8), plotted against the temperature for each model.
+
+    **How to interpret**: A high percentage (Y-axis) means the model frequently generates highly toxic content (above the threshold) at that temperature. This plot represents the frequency or rate at which each model produces high-toxicity responses ("tail of the distribution") as a function of temperature.
+    """,
+
+    # Plot 5
+    "plot_black_card_triggers": 
+    """
+    **Description:** Generates a heatmap. It shows the mean toxicity grouped by the black cards (black_id) that triggered the most toxic responses (the top_k with the highest mean toxicity) and the model. 
+
+    **How to interpret**: Brighter colors (yellow in the default viridis colormap) indicate a higher mean toxicity score for that specific black card. This heatmap identifies which prompts (Y-axis) are most likely to trigger high toxicity responses from models. A column that is consistently brightly colored across many black cards suggests that model is generally more susceptible to toxic prompting.
+    """,
+
+    # Plot 6
+    "plot_top_plays_heatmap_per_model": 
+    """
+    **Description:** Generates a heatmap. It shows the mean toxicity for the specific combinations of black card + winning response (play_key) that were most toxic (the top_k) versus the model.
+
+    **How to interpret**: Brighter colors represent a higher mean toxicity for that specific play combination. Unlike the black card trigger plot, this shows the specific combinations of prompt and completion that are the most toxic. It helps pinpoint highly toxic generated phrases.
+    """,
+
+    # Plot 7
+    "plot_instability": 
+    """
+    **Graph: Mean Toxicity vs. Instability**
+
+    **Description:** Shows the mean toxicity on the X-axis versus the standard deviation of toxicity (instability) on the Y-axis. The point size reflects the number of observations (n).
+
+    **How to interpret**: High X-Value (High Mean Toxicity): The play is frequently toxic. High Y-Value (High Instability): The toxicity score for that play varies widely across different generation attempts.  Plays in the top-right quadrant (High Mean, High STD) are the most concerning: they are often toxic and unpredictable.
+
+    **Graph: Toxic stable/unstable plays**
+
+    **Description:** Identifies plays that are consistently toxic (high mean, low STD), those that are consistently non-toxic (low mean, low STD), and the unstable/risky plays (high STD), where the model is sometimes toxic and sometimes not.
+
+    **How to interpret**: Highlights the most unstable interactions.
+    """,
+
+    # Plot 8
+    "plot_category_comparison": 
+    """
+    **Description:** Generates a grouped bar chart. It shows the average score for all toxicity attribute categories (e.g., SEVERE_TOXICITY, INSULT, PROFANITY, etc.) grouped by model.
+
+    **How to interpret**: The risk profile of each model, showing whether a model is more prone to generating obscene content, insults, threats, etc., compared to other models.
+    """,
+
+    # Plot 9
+    "plot_language_risk_faceted": 
+    """
+    **Description:** Generates separate bar charts (one per language LANG). Each chart shows the toxicity metrics (mean, p50, p90, p95 percentiles) for all models in that language.
+
+    **How to interpret**: The mean and 50th percentile (median) show the typical toxicity score.  The 90th and 95th percentiles are measures of the distribution's tail (the high-risk values). A high P95 indicates that 5% of the content generated by that model/language combination is extremely toxic. If Model A has a low mean in Language X but a high P95, it means while generally safe, it occasionally produces extreme toxicity in that language. If Model B has high scores across all percentiles, it is fundamentally more toxic in that language.
+    """,
+
+    # Plot 10
+    "plot_config_toxicity_per_model": 
+    """
+    **Description:** Generates a heatmap. It shows the mean toxicity grouped by configuration (racism, random, etc) and model.
+
+    **How to interpret**: How different configurations influence the toxicity of each model's responses.
+    """,
+
+    # Plot 11
+    "plot_config_distribution": 
+    """
+    **Description:** Generates a violin plot for the toxicity distribution by configuration.
+
+    **How to interpret**: 
+    * **Toxicity distribution by configuration (split by model)**: This allows for a granular comparison. You can see not only if a configuration is risky overall but also which model performs the worst (or best) under that specific configuration.
+    """,
+
+    # Plot 12
+    "plot_config_tail_rate": 
+    """
+    **Description:** Generates a grouped bar chart. It shows the percentage of responses above the toxicity threshold grouped by configuration and model.
+
+    **How to interpret**: The height represents the high-toxicity rate for a given configuration/model combination. This is a direct measure of risk based on configuration. Higher bars indicate configurations that are highly likely to produce critically toxic outputs.
+    """,
+
+    # Plot 13
+    "plot_white_cards_success_rate_by_model": 
+    """
+    **Description:** A Horizontal Bar Chart displaying the Observed Success Rate (Victories / Appearances) for the top n white_id cards across the entire dataset. The y-axis represents the the specific card and the x-axis represents the calculated Success_Rate, ranging from 0 to 1. The bars are sorted in descending order by the Success Rate. The number of times each card appears in the play column, multiplied by the number of rounds played for each play, represents the `Appearances` . Each `Victory` represents the card's victory in a round.
+
+    **How to interpret**: High Success Rate (Bars extending far to the right): A card with a high Success Rate (closer to $1.0$) is one that was chosen as the winner a large percentage of the times it appeared as an option.
+    """,
+
+    # Plot 14
+    "plot_inconsistencies_per_model": 
+    """
+    **Description:** A Grouped Vertical Bar Chart illustrating the Majority Election Rate (MER) for different Language Models (LLMs) across various unique game configurations. The X-axis represents the Configuration_Key, which is a concatenated identifier of the game parameters (config, lang, temperature, black_id). Each unique key represents a specific game setup. The Y-axis represents the MER, ranging from 0 to 1. The bars are grouped and colored by the LLM Model, allowing for direct comparison of consistency between models. 
+
+    **How to Interpret**: High MER (Bar close to 1.0): Indicates high consistency. For that specific game setup, the model repeatedly chose the same winning card in a high percentage of the rounds. This suggests the model's judgment was stable. Low MER (Bar close to 0.0): Indicates low consistency or high variability. The model frequently switched its choice of the winning card across the rounds for that single configuration. If Model A has a much higher bar than Model B for the same configuration, Model A is generally more robust and consistent in its choice for that specific game.
+    """,
+
+    # Plot 15
+    "plot_model_tox_percentage": 
+    """
+    **Description:** A Normalized Stacked Vertical Bar Chart showing the distribution of the winning card's toxicity pattern across different Language Models (LLMs). The height of each bar segment represents the percentage of rounds where the winning card fell into one of three categories relative to the other available cards: 
+    - Most Toxic: The winning card had the highest toxicity score among the choices. (Colored Red for warning)
+    - Least Toxic: The winning card had the lowest toxicity score among the choices. (Colored Green for preference against toxicity)
+    - Intermediate: The winning card's toxicity score was between the highest and lowest available scores. (Colored Gold)
+
+    **How to interpret**: The chart immediately reveals a model's bias towards toxicity in its choices. 
+    - A model with a large red segment (e.g., Model B at 40%) has a strong tendency to select the most toxic card available in a round. This indicates a potential alignment or lack of sensitivity to toxic content. 
+    - A model with a large green segment (e.g., Model C at 65%) shows a preference for choosing the least toxic card available. This suggests the model may be biased towards safer or non-offensive content, potentially acting as a "detoxifier." 
+    - The "Intermediate" segment size shows how often the model is selecting cards that are neither the absolute best nor absolute worst in terms of toxicity, suggesting a more nuanced choice based on non-toxicity factors (e.g., humor or relevance).
+    """,
+
+    # Plot 16
+    "plot_jude_description_comparison": 
+    """
+    **Description:** This chart employs a Faceted Bar Plot to illustrate how different Judge Descriptions (character_description) influence the average toxicity scores (mean_toxicity and mean_severe_toxicity) of two distinct language Models. The visualization breaks down the results into separate subplots (facets), where each subplot represents one unique judge description. Within each facet, the models are directly compared across the two measured toxicity metrics.
+
+    **How to Interpret**: Examine each subplot (facet) individually. The facet title indicates the Judge Description currently being analyzed (e.g., "Agressive Critic"). This comparison shows which model (represented by color) yielded higher average toxicity scores when exposed to that specific judge persona.
+    """,
+    
+}
+
+def get_chart_description(chart_function_name):
+    
+    return CHART_DESCRIPTIONS.get(chart_function_name, None)
