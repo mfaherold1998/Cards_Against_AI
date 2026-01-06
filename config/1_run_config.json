@@ -5,9 +5,9 @@
     "file_type":"xlsx",
     "models": ["gemma3:4b", "moondream"],
     "temperatures": [0.5, 0.8],
-    "rounds": 4,
+    "rounds": 2,
     "dataset_mode": "test",
-    "test_num_rows": 4,
+    "test_num_rows": 10,
     "prompt_type": "prompt_player",
-    "character_description": "A lover of dark humor."
+    "character_description": "A follower of Hitler's Nazi ideology."
 }

@@ -1,7 +1,4 @@
-venv/
-venv_cpu/
-venv_gpu/
-env/
+.venv/
 .env
 *.secret
 results/
@@ -9,4 +6,3 @@ logs/
 __pycache__/
 decks/
 temp.ipynb
-notebooks/

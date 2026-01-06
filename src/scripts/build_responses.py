@@ -36,7 +36,7 @@ def _is_valid_response(row:pd.Series, cards: dict):
         if not _match_ID_spaces(row, cards):
             return False
         
-        valid_ids = row.get('play', [])
+        valid_ids = row.get('play_list', [])
         found_ids = row['winners']
         
         is_subset = set(found_ids).issubset(set(valid_ids))
@@ -65,7 +65,7 @@ def split_responses(df:pd.DataFrame, cards: dict):
         logger.error("There is not 'response' column to analyze. Returning three empty DataFrames.")
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     
-    df_temp['play'] = df_temp['play'].apply(_safe_literal_eval)
+    df_temp['play_list'] = df_temp['play'].apply(_safe_literal_eval)
 
     df_temp['winners'] = df_temp['response'].str.findall(pattern_id)
 
@@ -84,6 +84,9 @@ def split_responses(df:pd.DataFrame, cards: dict):
 
     # df_filtered: we leave the rows where the count DOES match (True)
     df_filtered = df_temp[mask_matched].copy()
+
+    #Remove play_list
+    df_filtered = df_filtered.drop(columns=['play_list']).copy()
 
     return df_filtered, df_no_response, df_mismatch
 

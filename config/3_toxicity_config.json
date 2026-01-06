@@ -1,6 +1,6 @@
 {
-    "run_id":"run_prompt_player_04_01_2026_17-13-24",
-    "run_config_dir": "./results/run_prompt_player_04_01_2026_17-13-24/run_config.json",
+    "run_id":"run_prompt_player_06_01_2026_19-51-59",
+    "run_config_dir": "./results/run_prompt_player_06_01_2026_19-51-59/run_config.json",
     "detoxify_model": "original",
     "device": "cpu",
     "batch_size": 64
