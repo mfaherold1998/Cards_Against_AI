@@ -5,4 +5,5 @@ results/
 logs/
 __pycache__/
 decks/
+games/
 temp.ipynb
