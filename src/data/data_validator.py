@@ -77,7 +77,7 @@ def file_validator(df: pd.DataFrame, schema: Type[Any]) -> Dict[str, Any]:
 
     # **CAMBIO CLAVE:** Convertir la lista de objetos Pydantic a una lista de diccionarios
     # y luego a un DataFrame. Usamos .model_dump() para Pydantic v2 o .dict() para v1.
-    if hasattr(valid_pydantic_objects[0], 'model_dump'):
+    if valid_pydantic_objects and hasattr(valid_pydantic_objects[0], 'model_dump'):
         # Pydantic v2
         valid_data_dicts = [obj.model_dump() for obj in valid_pydantic_objects]
     elif valid_pydantic_objects and hasattr(valid_pydantic_objects[0], 'dict'):

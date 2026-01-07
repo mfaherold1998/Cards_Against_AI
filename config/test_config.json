@@ -1,0 +1,13 @@
+{
+  "results_dir": "./tests/results",
+  "prompt_type": "prompt_player",
+  "cards_dir": "./data",
+  "languages": ["EN"],
+  "file_type": "csv",
+  "dataset_mode": "test",
+  "test_num_rows": 10,
+  "rounds": 1,
+  "models": ["test_model"],
+  "temperatures": [0.7],
+  "character_description": "A test character."
+}
