@@ -2,6 +2,7 @@ import ollama
 from itertools import product
 from typing import Dict, Literal
 import pandas as pd
+import re
 
 from src.utils.logging import create_logger
 from src.utils.prompts import PROMPTS
@@ -14,10 +15,14 @@ def single_round(model, prompt, temperature):
     model_response = ollama.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
+        #think=False,
         options={"temperature": temperature}  #"format": "json"
     )
-
-    return model_response
+    raw_text = model_response["message"]["content"]
+    #logger.info(raw_text)
+    clean_text = re.sub(r"<think>[\s\S]*?</think>", "", raw_text).strip()
+    #logger.info(clean_text)
+    return clean_text
 
 def run_models(
         n_rounds: int,
@@ -79,10 +84,10 @@ def run_models(
                             prompt, 
                             temperature
                         )
-                        content = getattr(getattr(res, "message", None), "content", "")
+                        #content = getattr(getattr(res, "message", None), "content", "")
                         
                     except Exception as e:
-                        content = f"API_ERROR: {type(e).__name__}: {e}"                    
+                        res = f"API_ERROR: {type(e).__name__}: {e}"                    
                         logger.error(f"Error during round {i+1} for {config_name}|{model}. {content}", exc_info=True)
                         
                     # 4. Acumular resultados
@@ -94,7 +99,7 @@ def run_models(
                         "temperature": temperature,
                         "black_id": black_card_id,
                         "play": list(white_card_ids),
-                        "response": content                           
+                        "response": res                           
                     })
 
 
