@@ -4,6 +4,9 @@ try:
     from src.scripts import plotly_express_plots as user_plots
 except ImportError:
     user_plots = None
+import regex as re
+from pathlib import Path
+import json
 
 # Page configuration
 st.set_page_config(page_title="Toxicity Plots of LLMs", layout="wide")
@@ -197,6 +200,31 @@ def main():
             # Simple preview as requested
             st.dataframe(df.head(), use_container_width=True)
             st.caption(f"Shape: {df.shape[0]} rows, {df.shape[1]} columns")
+
+        # --- Show Run Parameters ---
+        run_id_pattern = re.compile(r'run_\w+_\d{2}_\d{2}_\d{4}_\d{2}-\d{2}-\d{2}')
+        match = run_id_pattern.search(selected_file)
+
+        if match:
+            run_id = match.group(0)
+            # 2. Construir la ruta al archivo JSON (ajusta la carpeta 'results' si es necesario)
+            config_path = Path(f"./results/{run_id}/run_config.json")
+
+            if st.checkbox("Show Run Configuration"):
+                if config_path.exists():
+                    try:
+                        with open(config_path, "r", encoding="utf-8") as f:
+                            config_data = json.load(f)
+                        
+                        # 3. Mostrar los datos de forma elegante
+                        st.json(config_data) 
+                        st.caption(f"Source: {config_path}")
+                    except Exception as e:
+                        st.error(f"Error reading configuration: {e}")
+                else:
+                    st.warning(f"Configuration file not found for run: {run_id}")
+        else:
+            st.info("This file does not seem to have a valid Run ID in its name.")
 
         st.markdown("---")
 

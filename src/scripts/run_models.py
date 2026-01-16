@@ -88,7 +88,7 @@ def run_models(
                         
                     except Exception as e:
                         res = f"API_ERROR: {type(e).__name__}: {e}"                    
-                        logger.error(f"Error during round {i+1} for {config_name}|{model}. {content}", exc_info=True)
+                        logger.error(f"Error during round {i+1} for {config_name}|{model}. {res}", exc_info=True)
                         
                     # 4. Acumular resultados
                     results.append({

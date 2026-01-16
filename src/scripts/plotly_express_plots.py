@@ -5,8 +5,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from src.utils.utils import build_play_key
 from src.scripts.analysis import calculate_overall_toxicity
+from src.utils.utils import ATTRIBUTE_COLUMNS
 
-ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
+#ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
 
 def plot_toxicity_vs_temperature (df:pd.DataFrame, col:str = 'toxicity'):
     
@@ -17,9 +18,9 @@ def plot_toxicity_vs_temperature (df:pd.DataFrame, col:str = 'toxicity'):
     df_plot_line['std_tox'] = df_plot_line['std_tox'].fillna(0)
 
     df_plot_line['upper_bound'] = df_plot_line['mean_tox'] + df_plot_line['std_tox']
-    max_y_value = df_plot_line['upper_bound'].max()
-    y_max_with_margin = max_y_value * 1.05
-    y_max_final = min(1.0, y_max_with_margin)
+    #max_y_value = df_plot_line['upper_bound'].max()
+    #y_max_with_margin = max_y_value * 1.05
+    #y_max_final = min(1.0, y_max_with_margin)
 
     fig = px.line(
         data_frame=df_plot_line,
@@ -56,7 +57,7 @@ def plot_toxicity_vs_temperature (df:pd.DataFrame, col:str = 'toxicity'):
         xaxis_title='Temperature',
         yaxis_title='Mean Toxicity',
         # Ajustar el rango del eje Y si es necesario (scores de 0 a 1)
-        yaxis_range=[0, y_max_final],
+        yaxis_range=[0, 1],
         width=800,
         xaxis_range=[0.4, 0.9]
     )
@@ -812,14 +813,23 @@ def plot_model_tox_percentage(df:pd.DataFrame, col:str = 'toxicity'):
 
     return fig
 
-def plot_jude_description_comparison(df:pd.DataFrame):
+def plot_jude_description_comparison(df:pd.DataFrame, col:str = 'mean_toxicity'):
+
+    clean_col = col.replace('mean_', '').replace('std_', '')
+    mean_col = f"mean_{clean_col}"
+    std_col = f"std_{clean_col}"
+
+    if mean_col not in df.columns:
+        return None
 
     df_melted = df.melt(
-        id_vars=['character_description', 'model', 'run_number'],
-        value_vars=['mean_toxicity'],
+        id_vars=['character_description', 'model', 'run_number', std_col],
+        value_vars=[mean_col],
         var_name='Toxicity_Metric',  # Columna que se usará para el eje X
         value_name='Average_Score'   # Columna que se usará para el eje Y
     )
+
+    df_melted['Toxicity_Metric'] = df_melted['Toxicity_Metric'].str.replace('mean_', '')
 
     # 2. Creación del Gráfico Interactivo de Barras con Facetas
     fig = px.bar(
@@ -829,29 +839,30 @@ def plot_jude_description_comparison(df:pd.DataFrame):
         color='model',
         barmode='group',
         facet_col='character_description',
+        error_y=std_col,
         # El orden se basa en las descripciones únicas en el DF derretido
-        category_orders={"character_description": df_melted['character_description'].unique().tolist()},
+        category_orders={"character_description": sorted(df_melted['character_description'].unique().tolist())},
         hover_data={'run_number': True},
         labels={
-            'character_description': 'Judge Description',
+            'character_description': 'Judge Persona',
             'Average_Score': 'Average Toxicity Score',
-            'Toxicity_Metric': 'Metric'
+            'Toxicity_Metric': 'Metric',
+            std_col: 'Std Dev'
         },
-        title='Average Toxicity per Model Under Different Judge Descriptions',
+        title=f'Comparison of {clean_col.title().title()} by Judge Persona',
         height=500
     )
 
-    # 3. Ajustes de formato
-    # Limpiar títulos de faceta (quita "character_description=")
+    # Formatos adicionales
     fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
     
-    # Limpiar la leyenda del modelo (quita sufijos de modelo y métrica)
-    fig.for_each_trace(lambda t: t.update(name=t.name.replace(':3:4b', '').replace('mean_', '').replace('_toxicity', '')))
+    # Fijar el rango de 0 a 1 como querías en los otros gráficos
+    fig.update_layout(
+        yaxis_range=[0, 1.0],
+        legend_title_text='Model',
+        margin=dict(t=80, b=40) # Dar espacio para el título
+    )
     
-    # Ajustar el título de la leyenda de color
-    fig.update_layout(legend_title_text='Model')
-    
-    # Quitar título del eje X y rotar etiquetas
-    fig.update_xaxes(title_text='', tickangle=45)
+    fig.update_xaxes(title_text='', tickangle=0) # Eje X más limpio
 
     return fig

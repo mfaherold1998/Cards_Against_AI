@@ -5,7 +5,7 @@ from typing import Dict
 from pathlib import Path
 import re
 import json
-
+from src.utils.utils import ATTRIBUTE_COLUMNS
 from src.utils.logging import create_logger
 logger = create_logger (log_name="main")
 
@@ -147,7 +147,7 @@ def calculate_overall_toxicity(df: pd.DataFrame, score_col:str = 'toxicity', key
     # Grouping using the 5 key columns
     results_toxicity = df_temp.groupby(key_cols).apply(lambda x: {
         #Check is not empty before colling iloc[0]
-        'winner_score': x[x['status'] == 'Winner']['toxicity'].iloc[0] if not x[x['status'] == 'Winner'].empty else np.nan, 
+        'winner_score': x[x['status'] == 'Winner'][score_col].iloc[0] if not x[x['status'] == 'Winner'].empty else np.nan, 
         'max_score': x[score_col].max(),
         'min_score': x[score_col].min()
     }, include_groups=False).apply(pd.Series)
@@ -165,7 +165,7 @@ def calculate_overall_toxicity(df: pd.DataFrame, score_col:str = 'toxicity', key
 #----- Judge Description pattern analysis ----------
 
 # Just for winners files
-def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], results_dir: str, col:str = 'toxicity') -> pd.DataFrame:
+def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame], results_dir: str) -> pd.DataFrame:
     """
     Calculate the average toxicity of the experiment results 
     and group them by the judge's description ('character_description'). returns a Pandas DataFrame with 
@@ -174,6 +174,8 @@ def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame]
 
     results = []
     run_id_pattern = re.compile(r'run_\w+_\d{2}_\d{2}_\d{4}_\d{2}-\d{2}-\d{2}')
+
+    cols_to_process = ATTRIBUTE_COLUMNS 
 
     for file_name, df in dicc.items():
         match = run_id_pattern.search(file_name)
@@ -203,37 +205,55 @@ def character_description_comparison_mean_toxicity(dicc: Dict[str, pd.DataFrame]
             print(f"Unexpected error reading the configuration '{config_path}': {e}")
         
         if not df.empty and 'model' in df.columns:
-            mean_df = df.groupby('model').agg(
-                mean_run_toxicity=(col, 'mean')
-            ).reset_index()
+
+            existing_cols = [c for c in cols_to_process if c in df.columns]
+
+            agg_dict = {}
+            for col in existing_cols:
+                agg_dict[col] = ['mean', 'std']
+
+            mean_df = df.groupby('model').agg(agg_dict)
+            mean_df.columns = [f"{stat}_{col}" for col, stat in mean_df.columns]
+            mean_df = mean_df.reset_index()
 
             for index, row in mean_df.iterrows():
-                results.append({
+                entry = {
                     'run_id': run_id,
                     'character_description': character_description,
-                    'model': row['model'],
-                    'mean_run_toxicity': row['mean_run_toxicity']
-                })
+                    'model': row['model']
+                }
+                for col in existing_cols:
+                    entry[f'mean_{col}'] = row[f'mean_{col}'] 
+                    entry[f'std_{col}'] = row[f'std_{col}']
+                results.append(entry)
                 
-        else:
-            results.append({
-                'run_id': run_id,
-                'character_description': character_description,
-                'model': 'Model Missing',
-                'mean_run_toxicity': 0.0
-            })
-    
-    df_results_by_run_and_model = pd.DataFrame(results)
-
-    if df_results_by_run_and_model.empty:
+    if not results:
         logger.info("Warning: The list of results is empty (input dictionary was empty or all files were skipped). Returning an empty DataFrame.")
         return pd.DataFrame()
     
-    df_final_comparison = df_results_by_run_and_model.groupby(['character_description', 'model']).agg(
-        run_number=('run_id', 'count'),
-        mean_toxicity=('mean_run_toxicity', 'mean')
-    ).reset_index()
+    df_results_by_run_and_model = pd.DataFrame(results)
+
+    mean_cols = [c for c in df_results_by_run_and_model.columns if c.startswith('mean_')]
+
+    final_agg_dict = {col: 'mean' for col in df_results_by_run_and_model.columns if col.startswith('mean_') or col.startswith('std_')}
+    final_agg_dict['run_id'] = 'count'
+
+    df_final = df_results_by_run_and_model.groupby(['character_description', 'model']).agg(final_agg_dict).reset_index()
     
-    df_final_comparison = df_final_comparison.sort_values(by=['model', 'mean_toxicity'], ascending=False)
+    df_final = df_final.rename(columns={'run_id': 'run_number'})
     
-    return df_final_comparison
+    main_col = 'mean_toxicity' if 'mean_toxicity' in df_final.columns else mean_cols[0]
+    df_final = df_final.sort_values(by=['model', main_col], ascending=False)
+    
+    return df_final
+
+
+
+
+        
+        
+                
+
+    
+    
+    

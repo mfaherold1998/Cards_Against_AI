@@ -1,6 +1,7 @@
 from enum import Enum
 from dotenv import load_dotenv, find_dotenv
 
+ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
 
 class FilesNames(Enum):
     """Standard filenames for datasets."""

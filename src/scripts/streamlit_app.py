@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from src.scripts.plotly_express_plots import *
+from src.utils.utils import ATTRIBUTE_COLUMNS
 
 # --- File upload section ---
 def initialize_session_state():
@@ -336,7 +337,9 @@ def render_chart_controls(chart_function_name, df):
     if chart_function_name in ["plot_toxicity_vs_temperature", 
                                "plot_toxicity_vs_temperature_shaded",
                                "plot_distribution_by_model",
-                               "plot_language_risk_faceted"]:
+                               "plot_language_risk_faceted",
+                               "plot_model_tox_percentage",
+                               "plot_jude_description_comparison"]:
         params = _get_params_col(df)
     
     elif chart_function_name in ["plot_rates_above_threshold", 

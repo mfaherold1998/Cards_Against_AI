@@ -3,11 +3,11 @@
     "results_dir": "./results",
     "languages": ["EN"],
     "file_type":"xlsx",
-    "models": ["llama3.1:70b", "gpt-oss:latest", "gemma3:27b", "qwen3:32b", "llama4:latest", "qwen2.5:32b", "qwen2.5:72b", "deepseek-r1:70b", "llama3.3:latest", "gemma2:latest", "gemma2:27b"],
-    "temperatures": [0.2,0.5,0.8],
-    "rounds": 5,
-    "dataset_mode": "all",
-    "test_num_rows": 10,
+    "models": ["gemma3:4b", "moondream"],
+    "temperatures": [0.5, 0.8],
+    "rounds": 2,
+    "dataset_mode": "test",
+    "test_num_rows": 5,
     "prompt_type": "prompt_player",
-    "character_description": "A follower of Hitler's Nazi ideology."
+    "character_description": "The president of US Donald Trump."
 }
