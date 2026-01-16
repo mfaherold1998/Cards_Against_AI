@@ -1,11 +1,12 @@
-import plotly.express as px
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from src.utils.utils import build_play_key
 from src.scripts.analysis import calculate_overall_toxicity
 from src.utils.utils import ATTRIBUTE_COLUMNS
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 
 #ATTRIBUTE_COLUMNS = ['toxicity', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack', 'sexually_explicit', 'profanity']
 
@@ -864,5 +865,47 @@ def plot_jude_description_comparison(df:pd.DataFrame, col:str = 'mean_toxicity')
     )
     
     fig.update_xaxes(title_text='', tickangle=0) # Eje X más limpio
+
+    return fig
+
+def plot_spider (df:pd.DataFrame):
+    
+    available_cols = [c for c in ATTRIBUTE_COLUMNS if c in df.columns]
+
+    df_avg = df.groupby('model')[available_cols].mean().reset_index()
+
+    fig = go.Figure()
+
+    # 4. Añadir cada serie de datos (como en la imagen: "Document Set A", "moondream", etc.)
+    for i, row in df_avg.iterrows():
+        fig.add_trace(go.Scatterpolar(
+            r=row[available_cols].values.tolist() + [row[available_cols].values[0]], # Cerramos el círculo
+            theta=available_cols + [available_cols[0]], # Cerramos el círculo
+            fill='toself',
+            name=f"Modelo: {row['model']}",
+            opacity=0.7
+        ))
+
+    # 5. Estética del gráfico (Fondo oscuro y layout)
+    fig.update_layout(
+        polar=dict(
+            bgcolor="rgba(15, 24, 40, 1)", # Fondo oscuro como el de tu imagen
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1], # Las puntuaciones de toxicidad suelen ir de 0 a 1
+                gridcolor="gray",
+                showline=False,
+                tickfont=dict(color="white")
+            ),
+            angularaxis=dict(
+                gridcolor="gray",
+                tickfont=dict(color="white", size=12)
+            )
+        ),
+        showlegend=True,
+        paper_bgcolor="rgba(15, 24, 40, 1)", # Color de fondo exterior
+        font=dict(color="white"),
+        title="Avg. Toxicity Attributes Profile"
+    )
 
     return fig

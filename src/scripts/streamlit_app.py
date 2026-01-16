@@ -135,7 +135,8 @@ def get_available_charts_for_type(doc_type):
             "Language risk per model":"plot_language_risk_faceted",
             "Mean toxicity by configuration":"plot_config_toxicity_per_model",
             "Toxicity distribution by configuration":"plot_config_distribution",
-            "High-toxicity rate by configuration":"plot_config_tail_rate"
+            "High-toxicity rate by configuration":"plot_config_tail_rate",
+            "Spider plot": "plot_spider"
         }
     elif doc_type == "combinations":
         charts = {

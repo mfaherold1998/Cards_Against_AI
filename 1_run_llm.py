@@ -35,6 +35,7 @@ def main():
     RUN_DIR = results_dir / run_id
     RUN_DIR.mkdir(parents=True, exist_ok=True)
 
+    #logger.info(f"RUNNING AS: {prompt_type}")
     #logger.debug(f"CURRENT RUN DIR (RUN_ID): {run_id}")
 
     # 4. Save used configuration in RUN_DIR

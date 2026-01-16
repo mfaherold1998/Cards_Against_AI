@@ -8,6 +8,6 @@
     "rounds": 2,
     "dataset_mode": "test",
     "test_num_rows": 5,
-    "prompt_type": "prompt_player",
-    "character_description": "The president of US Donald Trump."
+    "prompt_type": "prompt_judge",
+    "character_description": "The president of US, Donald Trump."
 }
